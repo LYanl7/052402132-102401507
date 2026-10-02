@@ -1,0 +1,30 @@
+{
+  "name": "mayoimon",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.16.0"
+  },
+  "scripts": {
+    "dev": "npm run build -w @mayoimon/shared && npm run dev -w @mayoimon/web",
+    "build": "npm run build -w @mayoimon/shared && npm run build -w @mayoimon/web",
+    "start": "npm start -w @mayoimon/web",
+    "check": "npm run build -w @mayoimon/shared && npm run check -w @mayoimon/web",
+    "test": "npm run build -w @mayoimon/shared && npm test -w @mayoimon/web",
+    "test:e2e": "npm run build -w @mayoimon/shared && playwright test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "preview:screenshots": "node scripts/capture-preview.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^22.19.0",
+    "prettier": "^3.9.9",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
