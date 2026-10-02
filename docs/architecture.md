@@ -36,11 +36,23 @@ flowchart LR
 - `packages/shared/src/models.ts`：前后端共享的数据结构，包括用户、发布信息、聊天消息、历史分页和统计；只声明类型，不依赖校验或业务实现。
 - `packages/shared/src/schemas.ts`：输入解析、默认值和发布校验规则；发布校验的输出通过 `satisfies z.ZodType<PostInput>` 与共享模型保持类型兼容。
 - `packages/shared/src/constants.ts`：类别标签与校园示例地点；`index.ts` 仅汇总导出，保留现有包入口。
-- 服务端模块的 `models.ts`：数据库行、查询投影或基础设施上下文类型；`schemas.ts`：接口输入校验。`handlers.ts` 和 `service.ts` 导入这些定义处理请求和业务，不再内嵌模型声明。
+- 服务端模块的 `models.ts`：由 Drizzle 表定义推导的数据库行类型、查询输入或基础设施上下文类型；`schemas.ts`：接口输入校验。`handlers.ts` 和 `service.ts` 处理请求与业务，`repository.ts` 封装数据库操作。
 - `apps/web/src/models/session.ts`：浏览器会话状态契约，与 Provider 的连接和状态更新逻辑分开。
-- `infrastructure/schema.ts`：SQLite 建表和索引定义；`database.ts` 负责连接、迁移执行及事务，沿用原有版本号与表结构。
+- `infrastructure/schema.ts`：Drizzle 表、字段映射、约束与索引模型；`database.ts` 创建 `better-sqlite3` 连接和 Drizzle 实例，执行版本迁移。
+- `infrastructure/migrations/0001-initial.ts`：保留原始 v1 建表 SQL，沿用 `schema_migrations` 记录；已有数据库不重建表，保留原始 rowid。
 
-新增或调整模型时在对应模型文件中维护，使用 `import type` 引入；权限、状态变更、查询和持久化操作留在执行逻辑文件中。
+新增或调整模型时在对应模型文件中维护。权限与状态规则留在业务层；查询、写入及数据库事务留在仓储层，业务层不拼接 SQL。表模型与业务逻辑分开维护。
+
+数据库读写使用 Drizzle ORM 0.45.3 的 `better-sqlite3` 驱动。仓储使用类型化的 `select`、`insert`、`update`、`delete`、条件表达式和冲突处理；Drizzle 自动映射数据库下划线字段和 TypeScript 驼峰字段，并转换图片 JSON。`rowid`、`instr`、聚合与条件表达式通过 Drizzle 的参数化 `sql` 模板补充，不直接调用驱动执行业务 SQL。消息写入与会话更新时间、浏览次数与历史记录、已读游标批量更新使用 Drizzle 的同步事务，保持 `BEGIN IMMEDIATE` 语义。连接参数和版本化建表 DDL 是仅有的驱动层操作。
+
+普通读写示例（仓储文件内）：
+
+```ts
+const user = db.orm.select().from(users).where(eq(users.email, email)).get();
+db.orm.update(users).set({ name, bio }).where(eq(users.id, id)).run();
+```
+
+后续表结构变更需同时更新 Drizzle schema 并新增版本迁移，不修改已经应用的 v1 SQL；当前不使用自动 schema 同步或 `drizzle-kit push`。接入方式参考 [Drizzle SQLite 文档](https://orm.drizzle.team/docs/sqlite/get-started-sqlite) 和 [事务文档](https://orm.drizzle.team/docs/transactions)。
 
 `runtime.ts` 使用进程级单例连接 SQLite，并保存实时推送函数。自定义启动入口和 Next.js 编译后的 Route Handlers 通过同一个 `globalThis` Symbol 取得该实例；开发热更新不会创建重复连接，HTTP 保存后的消息能推送到自定义服务入口管理的 WebSocket。数据库结构和文件路径沿用重构前的版本。
 
@@ -58,7 +70,7 @@ SQLite 包含 users、sessions、posts、uploads、favorites、history、convers
 - chat_messages 使用 `(sender_id, client_id)` 唯一键，网络重试不会重复发送。读取与分页使用 SQLite rowid 游标，避免相同时间戳漏消息。
 - 文件名由服务端随机生成，限制 PNG/JPEG/WebP、5 MB、最多九张，检查文件头和图片归属。文件存储和数据库登记失败时回滚文件写入。
 
-数据库迁移在启动时按版本执行。所有 SQL 参数绑定；排序和动态表名来自服务端固定枚举。信息删除使用 deleted_at，公开列表、收藏和历史隐藏该信息，已经建立的会话保留记录。
+数据库迁移在启动时按版本执行。查询参数由 ORM 绑定；排序和表选择来自服务端固定枚举。信息删除使用 deleted_at，公开列表、收藏和历史隐藏该信息，已经建立的会话保留记录。
 
 ## 发布状态
 
@@ -82,7 +94,7 @@ stateDiagram-v2
 
 数据库消息历史是事实来源；客户端断线指数退避重连，连上后重新拉取历史，断线期间每五秒 HTTP 同步。消息发送用 clientId 去重；已读保存到当前最后一条消息的 rowid，后台页面不自动标记新消息已读。连接每三十秒检查心跳和会话有效期，退出登录立即撤销当前会话连接。
 
-单机部署只运行一个 Next.js 服务实例。同步 SQLite API 和内存连接集合适合当前部署要求；本项目不引入多实例消息广播、分布式会话或集群协调。
+单机部署只运行一个 Next.js 服务实例。Drizzle 的同步 SQLite 驱动和内存连接集合适合当前部署要求；本项目不引入多实例消息广播、分布式会话或集群协调。
 
 ## 原型实现范围
 

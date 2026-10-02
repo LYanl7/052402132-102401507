@@ -1,6 +1,4 @@
-import type { User } from '@mayoimon/shared';
+import type { users } from '../infrastructure/schema.ts';
 
-export interface UserRow extends User {
-  password_hash: string;
-  created_at: string;
-}
+export type UserRow = typeof users.$inferSelect;
+export type NewUserRow = typeof users.$inferInsert;

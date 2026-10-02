@@ -2,6 +2,8 @@
 
 运行一个 Next.js 服务进程，页面、API、图片和 WebSocket 共用 3000 端口。本地 SQLite 和 uploads 目录持久化数据。要求 Node.js 22.16 或更高版本，npm 11。
 
+数据库使用 Drizzle ORM 和 `better-sqlite3`。部署时在目标操作系统运行 `npm ci` 安装对应的原生驱动，不跨系统复制 `node_modules`。Next.js 将该驱动和 ORM 作为服务端外部依赖加载。
+
 ## 本地或局域网演示
 
 ```powershell

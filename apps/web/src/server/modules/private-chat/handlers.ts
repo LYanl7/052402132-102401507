@@ -3,9 +3,9 @@ import { conversationInputSchema, chatHistoryQuerySchema } from './schemas.ts';
 import { chatInputSchema } from '@mayoimon/shared';
 import { userId, AppError } from '../infrastructure/context.ts';
 import { getPost } from '../message/service.ts';
-import { participant, listConversations, mapMessage, sendMessage } from './service.ts';
+import { participant, listConversations, sendMessage } from './service.ts';
 
-import type { ChatMessageCursorRow } from './models.ts';
+import { getOrCreateConversation, findChatHistory, saveReadCursors } from './repository.ts';
 import { endpoint, json } from '../infrastructure/http.ts';
 export const conversations = endpoint(
   async (req, ctx) => ({
@@ -20,20 +20,13 @@ export const createConversation = endpoint(
     if (post.userId === userId(req)) throw new AppError(400, '不能与自己发起会话');
     if (post.status !== 'active') throw new AppError(409, '该信息已完成，无法发起新联系');
     const [a, b] = [post.userId, userId(req)].sort();
-    ctx.db.run(
-      'INSERT OR IGNORE INTO conversations VALUES(?,?,?,?,?)',
-      randomUUID(),
-      p.postId,
-      a,
-      b,
-      new Date().toISOString(),
-    );
-    const row = ctx.db.one<{ id: string }>(
-      'SELECT id FROM conversations WHERE post_id=? AND user_a=? AND user_b=?',
-      p.postId,
-      a,
-      b,
-    )!;
+    const row = getOrCreateConversation(ctx.db, {
+      id: randomUUID(),
+      postId: p.postId,
+      userA: a,
+      userB: b,
+      updatedAt: new Date().toISOString(),
+    });
 
     return { conversation: listConversations(ctx.db, userId(req)).find((c) => c.id === row.id) };
   },
@@ -43,14 +36,17 @@ export const chatHistory = endpoint(
   async (req, ctx) => {
     participant(ctx.db, req.params.id, userId(req));
     const p = chatHistoryQuerySchema.parse(req.query);
-    const rows = ctx.db.all<ChatMessageCursorRow>(
-      'SELECT rowid cursor,* FROM chat_messages WHERE conversation_id=? AND rowid<? ORDER BY rowid DESC LIMIT ?',
+    const rows = findChatHistory(
+      ctx.db,
       req.params.id,
       p.before ?? Number.MAX_SAFE_INTEGER,
       p.limit,
     );
     return {
-      items: rows.slice().reverse().map(mapMessage),
+      items: rows
+        .slice()
+        .reverse()
+        .map(({ cursor: _cursor, ...message }) => message),
       nextCursor: rows.length === p.limit ? rows.at(-1)!.cursor : null,
     };
   },
@@ -71,36 +67,18 @@ export const sendChatMessage = endpoint(
 export const markRead = endpoint(
   async (req, ctx) => {
     participant(ctx.db, req.params.id, userId(req));
-    const row = ctx.db.one<{ max: number }>(
-      'SELECT COALESCE(MAX(rowid),0) max FROM chat_messages WHERE conversation_id=?',
-      req.params.id,
-    )!;
-    ctx.db.run(
-      'INSERT INTO conversation_reads VALUES(?,?,?) ON CONFLICT(conversation_id,user_id) DO UPDATE SET last_read_rowid=excluded.last_read_rowid',
-      req.params.id,
-      userId(req),
-      row.max,
-    );
+    saveReadCursors(ctx.db, [req.params.id], userId(req));
     return { ok: true };
   },
   { auth: true },
 );
 export const markAllRead = endpoint(
   async (req, ctx) => {
-    ctx.db.transaction(() => {
-      for (const c of listConversations(ctx.db, userId(req))) {
-        const row = ctx.db.one<{ max: number }>(
-          'SELECT COALESCE(MAX(rowid),0) max FROM chat_messages WHERE conversation_id=?',
-          c.id,
-        )!;
-        ctx.db.run(
-          'INSERT INTO conversation_reads VALUES(?,?,?) ON CONFLICT(conversation_id,user_id) DO UPDATE SET last_read_rowid=excluded.last_read_rowid',
-          c.id,
-          userId(req),
-          row.max,
-        );
-      }
-    });
+    saveReadCursors(
+      ctx.db,
+      listConversations(ctx.db, userId(req)).map((c) => c.id),
+      userId(req),
+    );
     return { ok: true };
   },
   { auth: true },

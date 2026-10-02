@@ -2,6 +2,7 @@ import type { Server } from 'node:http';
 import { WebSocketServer, type WebSocket } from 'ws';
 import type { SocketEvent } from '@mayoimon/shared';
 import type { Context } from '../infrastructure/models.ts';
+import { hasValidSession } from '../user/repository.ts';
 import { authenticate } from '../user/session.ts';
 
 export function attachChatSocket(server: Server, ctx: Context) {
@@ -52,13 +53,7 @@ export function attachChatSocket(server: Server, ctx: Context) {
         alive = true;
       });
       const timer = setInterval(() => {
-        if (
-          !ctx.db.one(
-            'SELECT token_hash FROM sessions WHERE token_hash=? AND expires_at>?',
-            item.hash,
-            Date.now(),
-          )
-        ) {
+        if (!hasValidSession(ctx.db, item.hash, Date.now())) {
           client.close(1008, 'session expired');
           return;
         }

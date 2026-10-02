@@ -1,3 +1,5 @@
+import { count, eq } from 'drizzle-orm';
+import { posts, schemaMigrations } from '../src/server/modules/infrastructure/schema.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -435,11 +437,15 @@ test('API business flows, permissions, persistent storage and realtime delivery'
         const reopened = new Database(databasePath);
         try {
           assert.equal(
-            reopened.one<{ status: string }>('SELECT status FROM posts WHERE id=?', postId)?.status,
+            reopened.orm
+              .select({ status: posts.status })
+              .from(posts)
+              .where(eq(posts.id, postId))
+              .get()?.status,
             'completed',
           );
           assert.equal(
-            reopened.one<{ count: number }>('SELECT COUNT(*) count FROM schema_migrations')?.count,
+            reopened.orm.select({ count: count() }).from(schemaMigrations).get()?.count,
             1,
           );
         } finally {

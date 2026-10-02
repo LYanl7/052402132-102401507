@@ -1,6 +1,6 @@
 # Mayoimon · 校园失物招领
 
-根据 [Penpot 产品原型](https://design.penpot.app/#/view?file-id=24d9d841-759d-81bc-8008-b3847703e8ed&page-id=24d9d841-759d-81bc-8008-b3847703e8ee&section=interactions&index=0&share-id=763608af-2154-449d-a9b8-8dc781e8335a) 实现的移动端 Web 应用。采用 **Next.js 全栈应用 + TypeScript + SQLite 本地数据库**，面向单机部署。
+根据 [Penpot 产品原型](https://design.penpot.app/#/view?file-id=24d9d841-759d-81bc-8008-b3847703e8ed&page-id=24d9d841-759d-81bc-8008-b3847703e8ee&section=interactions&index=0&share-id=763608af-2154-449d-a9b8-8dc781e8335a) 实现的移动端 Web 应用。采用 **Next.js 全栈应用 + TypeScript + Drizzle ORM + SQLite 本地数据库**，面向单机部署。
 
 首页保留原型的双列卡片、顶部首页/寻物/招领切换、五栏导航与黄色发布按钮；物品插画以 SVG 实现。浏览器页面不模拟手机信号、时间或用户在线状态。
 
@@ -63,6 +63,8 @@ mayoimono/
 ```
 
 前后端按代码职责分离：浏览器组件通过 HTTP/WebSocket 使用服务端，不直接访问数据库。Next.js Route Handlers 调用五个业务模块，生产环境只运行一个 Node 进程。普通接口由 Next.js 处理，`server.ts` 负责启动服务并挂载 `/ws`，不另建后端框架。详见 [架构说明](docs/architecture.md)。
+
+数据库表模型位于 `infrastructure/schema.ts`，各模块的 `repository.ts` 使用 Drizzle 封装读写，`handlers.ts` / `service.ts` 保留业务逻辑。SQLite 驱动采用 `better-sqlite3`，现有数据库和 v1 迁移记录可继续使用。
 
 ## 构建与验证
 

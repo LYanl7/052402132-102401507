@@ -3,6 +3,6 @@ const config: NextConfig = {
   devIndicators: false,
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
   transpilePackages: ['@mayoimon/shared'],
-  serverExternalPackages: ['ws'],
+  serverExternalPackages: ['ws', 'better-sqlite3', 'drizzle-orm'],
 };
 export default config;

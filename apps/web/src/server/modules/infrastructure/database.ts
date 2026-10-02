@@ -1,40 +1,44 @@
-import { migrationTableSql, initialSchemaSql } from './schema.ts';
-import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
+import BetterSqlite3 from 'better-sqlite3';
+import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { eq } from 'drizzle-orm';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import * as schema from './schema.ts';
+import { migrationTableSql, initialSchemaSql } from './migrations/0001-initial.ts';
 
 export class Database {
-  readonly connection: DatabaseSync;
+  private readonly connection: BetterSqlite3.Database;
+  readonly orm: BetterSQLite3Database<typeof schema>;
+
   constructor(path: string) {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
-    this.connection = new DatabaseSync(path);
-    this.connection.exec(
-      'PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;',
-    );
-    this.connection.exec(migrationTableSql);
-    if (!this.one('SELECT version FROM schema_migrations WHERE version=1'))
-      this.transaction(() => {
-        this.connection.exec(initialSchemaSql);
-        this.run('INSERT INTO schema_migrations VALUES(1,?)', new Date().toISOString());
-      });
-  }
-  one<T = Record<string, unknown>>(sql: string, ...params: SQLInputValue[]): T | undefined {
-    return this.connection.prepare(sql).get(...params) as T | undefined;
-  }
-  all<T = Record<string, unknown>>(sql: string, ...params: SQLInputValue[]): T[] {
-    return this.connection.prepare(sql).all(...params) as T[];
-  }
-  run(sql: string, ...params: SQLInputValue[]) {
-    return this.connection.prepare(sql).run(...params);
-  }
-  transaction<T>(action: () => T): T {
-    this.connection.exec('BEGIN IMMEDIATE');
+    this.connection = new BetterSqlite3(path);
+    this.orm = drizzle(this.connection, { schema });
     try {
-      const result = action();
-      this.connection.exec('COMMIT');
-      return result;
+      this.connection.pragma('foreign_keys = ON');
+      this.connection.pragma('journal_mode = WAL');
+      this.connection.pragma('busy_timeout = 5000');
+      this.connection.exec(migrationTableSql);
+      this.orm.transaction(
+        (tx) => {
+          if (
+            !tx
+              .select()
+              .from(schema.schemaMigrations)
+              .where(eq(schema.schemaMigrations.version, 1))
+              .get()
+          ) {
+            // Preserve the original v1 schema and ledger when opening existing files.
+            this.connection.exec(initialSchemaSql);
+            tx.insert(schema.schemaMigrations)
+              .values({ version: 1, appliedAt: new Date().toISOString() })
+              .run();
+          }
+        },
+        { behavior: 'immediate' },
+      );
     } catch (error) {
-      this.connection.exec('ROLLBACK');
+      this.connection.close();
       throw error;
     }
   }

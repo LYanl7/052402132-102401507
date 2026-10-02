@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { writeFile, unlink, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { userId, AppError } from './context.ts';
+import { insertUpload } from './upload-repository.ts';
 import { endpoint } from './http.ts';
 
 export const upload = endpoint(
@@ -28,7 +29,7 @@ export const upload = endpoint(
     const destination = join(ctx.dataDir, 'uploads', filename);
     await writeFile(destination, buffer, { flag: 'wx' });
     try {
-      ctx.db.run('INSERT INTO uploads VALUES(?,?,?)', path, userId(req), new Date().toISOString());
+      insertUpload(ctx.db, path, userId(req), new Date().toISOString());
     } catch (error) {
       await unlink(destination);
       throw error;
