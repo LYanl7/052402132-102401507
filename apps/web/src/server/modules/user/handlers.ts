@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { credentialsSchema, registerSchema, profileSchema, type User } from '@mayoimon/shared';
+import { credentialsSchema, registerSchema, profileSchema } from '@mayoimon/shared';
 import { AppError, userId } from '../infrastructure/context.ts';
 import { endpoint, json } from '../infrastructure/http.ts';
+import type { UserRow } from './models.ts';
 import { hashPassword, checkPassword } from './security.ts';
 import { sessionCookie, revokeSession } from './session.ts';
 
@@ -30,10 +31,7 @@ export const register = endpoint(
 export const login = endpoint(
   async (req, ctx) => {
     const p = credentialsSchema.parse(req.body);
-    const row = ctx.db.one<User & { password_hash: string }>(
-      'SELECT * FROM users WHERE email=?',
-      p.email.toLowerCase(),
-    );
+    const row = ctx.db.one<UserRow>('SELECT * FROM users WHERE email=?', p.email.toLowerCase());
     const ok = await checkPassword(
       p.password,
       row?.password_hash ?? '00000000000000000000000000000000:' + '00'.repeat(64),

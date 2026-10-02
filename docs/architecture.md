@@ -31,6 +31,17 @@ flowchart LR
 
 模块位于 `apps/web/src/server/modules/`。`src/app/api/**/route.ts` 仅导出 HTTP 方法和运行时配置；各模块的 `handlers.ts` 负责参数解析、认证和返回，发布与私聊的业务操作位于 `service.ts`。基础设施中的 `http.ts` 统一处理 Web Request/Response、来源检查、频率和请求大小限制、异常格式。共享包提供 TypeScript 类型和 Zod schema，服务端最终校验输入，浏览器预校验用于提示用户。
 
+数据模型与执行逻辑按以下文件边界组织：
+
+- `packages/shared/src/models.ts`：前后端共享的数据结构，包括用户、发布信息、聊天消息、历史分页和统计；只声明类型，不依赖校验或业务实现。
+- `packages/shared/src/schemas.ts`：输入解析、默认值和发布校验规则；发布校验的输出通过 `satisfies z.ZodType<PostInput>` 与共享模型保持类型兼容。
+- `packages/shared/src/constants.ts`：类别标签与校园示例地点；`index.ts` 仅汇总导出，保留现有包入口。
+- 服务端模块的 `models.ts`：数据库行、查询投影或基础设施上下文类型；`schemas.ts`：接口输入校验。`handlers.ts` 和 `service.ts` 导入这些定义处理请求和业务，不再内嵌模型声明。
+- `apps/web/src/models/session.ts`：浏览器会话状态契约，与 Provider 的连接和状态更新逻辑分开。
+- `infrastructure/schema.ts`：SQLite 建表和索引定义；`database.ts` 负责连接、迁移执行及事务，沿用原有版本号与表结构。
+
+新增或调整模型时在对应模型文件中维护，使用 `import type` 引入；权限、状态变更、查询和持久化操作留在执行逻辑文件中。
+
 `runtime.ts` 使用进程级单例连接 SQLite，并保存实时推送函数。自定义启动入口和 Next.js 编译后的 Route Handlers 通过同一个 `globalThis` Symbol 取得该实例；开发热更新不会创建重复连接，HTTP 保存后的消息能推送到自定义服务入口管理的 WebSocket。数据库结构和文件路径沿用重构前的版本。
 
 Next.js Route Handlers 处理所有普通 HTTP 接口。WebSocket 需要 Node HTTP 的 upgrade 事件，因此使用轻量的自定义服务入口挂载 `ws`，并保留 Next.js 自己的开发热更新连接。这是同一个 Next.js 应用，不需要独立 API 进程。启动入口用 TypeScript 单独编译；源代码的 `.ts` 相对导入在输出时改写为 `.js`，兼容 Turbopack 和 Node ESM。此项目不使用 Next.js standalone 输出或无状态 Serverless 部署。

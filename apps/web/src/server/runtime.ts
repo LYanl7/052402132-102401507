@@ -1,14 +1,9 @@
 import { mkdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { Database } from './modules/infrastructure/database.ts';
-import { AppError, type Context } from './modules/infrastructure/context.ts';
+import { AppError } from './modules/infrastructure/context.ts';
+import type { Context, RuntimeOptions } from './modules/infrastructure/models.ts';
 
-export interface RuntimeOptions {
-  databasePath?: string;
-  dataDir?: string;
-  origins?: string[];
-  secureCookie?: boolean;
-}
 // Next bundles Route Handlers separately from the custom server. Both share this
 // process-global runtime, so HTTP writes reach the same WebSocket subscribers.
 const runtimeKey = Symbol.for('mayoimon.runtime');

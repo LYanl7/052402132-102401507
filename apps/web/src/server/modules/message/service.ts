@@ -1,29 +1,10 @@
 import type { Post, PostInput } from '@mayoimon/shared';
 import { randomUUID } from 'node:crypto';
 import type { SQLInputValue } from 'node:sqlite';
+import type { PostRow } from './models.ts';
 import { Database } from '../infrastructure/database.ts';
 import { AppError } from '../infrastructure/context.ts';
 
-interface PostRow {
-  id: string;
-  user_id: string;
-  type: Post['type'];
-  title: string;
-  category: Post['category'];
-  location: string;
-  occurred_at: string;
-  description: string;
-  contact: string;
-  images: string;
-  lat: number | null;
-  lng: number | null;
-  status: Post['status'];
-  views: number;
-  created_at: string;
-  updated_at: string;
-  author_name: string;
-  favorite: number;
-}
 export const selectPosts = `SELECT p.*,u.name author_name,EXISTS(SELECT 1 FROM favorites f WHERE f.post_id=p.id AND f.user_id=?) favorite FROM posts p JOIN users u ON u.id=p.user_id`;
 export function mapPost(p: PostRow): Post {
   return {

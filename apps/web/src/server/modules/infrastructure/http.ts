@@ -1,16 +1,9 @@
 import { ZodError } from 'zod';
 import { getRuntime } from '../../runtime.ts';
 import { authenticate } from '../user/session.ts';
-import { AppError, type Context, type RequestContext } from './context.ts';
+import { AppError } from './context.ts';
+import type { Handler, EndpointOptions, RouteParams } from './models.ts';
 
-type RouteParams = { params: Promise<Record<string, string>> };
-type Handler = (req: RequestContext, ctx: Context) => unknown | Promise<unknown>;
-interface Options {
-  auth?: boolean;
-  status?: number;
-  rate?: number;
-  body?: 'form';
-}
 export function json(body: unknown, status = 200, headers: HeadersInit = {}) {
   return Response.json(body, { status, headers: { 'Cache-Control': 'no-store', ...headers } });
 }
@@ -43,7 +36,7 @@ export async function readBody(request: Request, max: number) {
   }
   return bytes;
 }
-export function endpoint(handler: Handler, options: Options = {}) {
+export function endpoint(handler: Handler, options: EndpointOptions = {}) {
   return async (request: Request, route?: RouteParams): Promise<Response> => {
     try {
       const ctx = getRuntime();

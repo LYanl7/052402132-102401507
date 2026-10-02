@@ -1,7 +1,7 @@
 import type { Server } from 'node:http';
 import { WebSocketServer, type WebSocket } from 'ws';
 import type { SocketEvent } from '@mayoimon/shared';
-import type { Context } from '../infrastructure/context.ts';
+import type { Context } from '../infrastructure/models.ts';
 import { authenticate } from '../user/session.ts';
 
 export function attachChatSocket(server: Server, ctx: Context) {

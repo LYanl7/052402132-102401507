@@ -1,23 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type { ChatMessage, Conversation } from '@mayoimon/shared';
 import type { Database } from '../infrastructure/database.ts';
+import type { ConversationRow, ConversationListRow, ChatMessageRow } from './models.ts';
 import { AppError } from '../infrastructure/context.ts';
 
-interface ConversationRow {
-  id: string;
-  post_id: string;
-  user_a: string;
-  user_b: string;
-  updated_at: string;
-}
-export interface ChatMessageRow {
-  id: string;
-  conversation_id: string;
-  sender_id: string;
-  content: string;
-  client_id: string;
-  created_at: string;
-}
 export function participant(db: Database, id: string, user: string) {
   const row = db.one<ConversationRow>('SELECT * FROM conversations WHERE id=?', id);
   if (!row || (row.user_a !== user && row.user_b !== user)) throw new AppError(404, '会话不存在');
@@ -35,15 +21,7 @@ export function mapMessage(row: ChatMessageRow): ChatMessage {
 }
 export function listConversations(db: Database, user: string): Conversation[] {
   return db
-    .all<
-      ConversationRow & {
-        peer_id: string;
-        peer_name: string;
-        post_title: string;
-        last_message: string;
-        unread: number;
-      }
-    >(
+    .all<ConversationListRow>(
       `SELECT c.*,p.title post_title,u.id peer_id,u.name peer_name,COALESCE((SELECT content FROM chat_messages m WHERE m.conversation_id=c.id ORDER BY m.rowid DESC LIMIT 1),'') last_message,(SELECT COUNT(*) FROM chat_messages m WHERE m.conversation_id=c.id AND m.sender_id<>? AND m.rowid>COALESCE((SELECT last_read_rowid FROM conversation_reads r WHERE r.conversation_id=c.id AND r.user_id=?),0)) unread FROM conversations c JOIN posts p ON p.id=c.post_id JOIN users u ON u.id=CASE WHEN c.user_a=? THEN c.user_b ELSE c.user_a END WHERE c.user_a=? OR c.user_b=? ORDER BY c.updated_at DESC`,
       user,
       user,

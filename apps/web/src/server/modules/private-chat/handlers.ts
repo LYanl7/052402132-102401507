@@ -1,16 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { z } from 'zod';
+import { conversationInputSchema, chatHistoryQuerySchema } from './schemas.ts';
 import { chatInputSchema } from '@mayoimon/shared';
 import { userId, AppError } from '../infrastructure/context.ts';
 import { getPost } from '../message/service.ts';
-import {
-  participant,
-  listConversations,
-  mapMessage,
-  sendMessage,
-  type ChatMessageRow,
-} from './service.ts';
+import { participant, listConversations, mapMessage, sendMessage } from './service.ts';
 
+import type { ChatMessageCursorRow } from './models.ts';
 import { endpoint, json } from '../infrastructure/http.ts';
 export const conversations = endpoint(
   async (req, ctx) => ({
@@ -20,7 +15,7 @@ export const conversations = endpoint(
 );
 export const createConversation = endpoint(
   async (req, ctx) => {
-    const p = z.object({ postId: z.uuid() }).parse(req.body);
+    const p = conversationInputSchema.parse(req.body);
     const post = getPost(ctx.db, p.postId, userId(req));
     if (post.userId === userId(req)) throw new AppError(400, '不能与自己发起会话');
     if (post.status !== 'active') throw new AppError(409, '该信息已完成，无法发起新联系');
@@ -47,13 +42,8 @@ export const createConversation = endpoint(
 export const chatHistory = endpoint(
   async (req, ctx) => {
     participant(ctx.db, req.params.id, userId(req));
-    const p = z
-      .object({
-        before: z.coerce.number().int().positive().optional(),
-        limit: z.coerce.number().int().min(1).max(100).default(50),
-      })
-      .parse(req.query);
-    const rows = ctx.db.all<ChatMessageRow & { cursor: number }>(
+    const p = chatHistoryQuerySchema.parse(req.query);
+    const rows = ctx.db.all<ChatMessageCursorRow>(
       'SELECT rowid cursor,* FROM chat_messages WHERE conversation_id=? AND rowid<? ORDER BY rowid DESC LIMIT ?',
       req.params.id,
       p.before ?? Number.MAX_SAFE_INTEGER,

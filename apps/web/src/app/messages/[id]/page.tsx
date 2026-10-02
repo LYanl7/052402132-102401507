@@ -1,14 +1,10 @@
 'use client';
 import { use, useEffect, useState, useRef, type FormEvent } from 'react';
 import Link from 'next/link';
-import type { ChatMessage, Conversation } from '@mayoimon/shared';
+import type { ChatMessage, Conversation, ChatHistory } from '@mayoimon/shared';
 import { Frame, Header, AuthGate, Loading, ErrorState } from '@/components/ui';
 import { useSession, useResource } from '@/components/providers';
 import { api, dateLabel, errorMessage } from '@/lib/api';
-interface History {
-  items: ChatMessage[];
-  nextCursor: number | null;
-}
 function Chat({ id }: { id: string }) {
   const { user, lastMessage, connected, revision } = useSession();
   const [text, setText] = useState(''),
@@ -21,7 +17,7 @@ function Chat({ id }: { id: string }) {
   const end = useRef<HTMLDivElement>(null);
   const pending = useRef<{ content: string; clientId: string } | null>(null);
   const chats = useResource<{ items: Conversation[] }>('/chats', revision);
-  const history = useResource<History>(
+  const history = useResource<ChatHistory>(
     '/chats/' + id + '/messages',
     `${lastMessage?.conversationId === id ? lastMessage.id : ''}:${revision}:${tick}`,
   );
@@ -78,7 +74,7 @@ function Chat({ id }: { id: string }) {
     if (cursor === null) return;
     setLoadingOlder(true);
     try {
-      const data = await api<History>('/chats/' + id + '/messages?before=' + cursor);
+      const data = await api<ChatHistory>('/chats/' + id + '/messages?before=' + cursor);
       setOlder((items) => [...data.items, ...items]);
       setCursor(data.nextCursor);
     } catch (e) {

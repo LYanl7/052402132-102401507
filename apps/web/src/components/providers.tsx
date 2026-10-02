@@ -9,17 +9,9 @@ import {
   type ReactNode,
 } from 'react';
 import type { User, ChatMessage, SocketEvent } from '@mayoimon/shared';
+import type { SessionContext } from '@/models/session';
 import { api, errorMessage } from '@/lib/api';
 
-interface SessionContext {
-  user: User | null;
-  loading: boolean;
-  updateUser: (user: User | null) => void;
-  toast: (message: string) => void;
-  lastMessage: ChatMessage | null;
-  connected: boolean;
-  revision: number;
-}
 const Context = createContext<SessionContext>(null!);
 export function Providers({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null),

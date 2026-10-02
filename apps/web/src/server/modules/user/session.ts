@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import type { User } from '@mayoimon/shared';
-import type { Context } from '../infrastructure/context.ts';
+import type { Context } from '../infrastructure/models.ts';
 import { tokenHash } from './security.ts';
 
 export function authenticate(ctx: Context, cookie: string | null | undefined) {
