@@ -8,9 +8,10 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import type { User, ChatMessage, SocketEvent } from '@mayoimon/shared';
+import type { User, ChatMessage } from '@mayoimon/shared';
 import type { SessionContext } from '@/models/session';
 import { api, errorMessage } from '@/lib/api';
+import { startChatSync } from '@/lib/chat-sync';
 
 const Context = createContext<SessionContext>(null!);
 export function Providers({ children }: { children: ReactNode }) {
@@ -50,45 +51,18 @@ export function Providers({ children }: { children: ReactNode }) {
       setLastMessage(null);
       return;
     }
-    let disposed = false,
-      socket: WebSocket | null = null,
-      retry: ReturnType<typeof setTimeout> | undefined,
-      attempt = 0;
-    const connect = () => {
-      const url =
-        process.env.NEXT_PUBLIC_WS_URL ??
-        `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`;
-      socket = new WebSocket(url);
-      socket.onopen = () => {
-        attempt = 0;
-        setConnected(true);
-        setRevision((n) => n + 1);
-      };
-      socket.onmessage = (event) => {
-        try {
-          const value = JSON.parse(event.data) as SocketEvent;
-          if (value.type === 'message') setLastMessage(value.message);
-        } catch {
-          /* Ignore invalid push packets; HTTP history remains authoritative. */
-        }
-      };
-      socket.onclose = (event) => {
-        setConnected(false);
-        if (disposed) return;
-        if (event.code === 1008) {
-          void refresh().catch((error) => toast(errorMessage(error)));
-          return;
-        }
-        retry = setTimeout(connect, Math.min(15000, 1000 * 2 ** attempt++));
-      };
-      socket.onerror = () => socket?.close();
-    };
-    connect();
-    return () => {
-      disposed = true;
-      clearTimeout(retry);
-      socket?.close();
-    };
+    setLastMessage(null);
+    return startChatSync(user.id, {
+      message: setLastMessage,
+      connected: (value) => {
+        setConnected(value);
+        if (value) setRevision((n) => n + 1);
+      },
+      error: toast,
+      unauthorized: () => {
+        void refresh().catch((error) => toast(errorMessage(error)));
+      },
+    });
   }, [user?.id, refresh, toast]);
   return (
     <Context.Provider

@@ -1,91 +1,77 @@
 'use client';
 import { use, useEffect, useState, useRef, type FormEvent } from 'react';
 import Link from 'next/link';
-import type { ChatMessage, Conversation, ChatHistory } from '@mayoimon/shared';
 import { Frame, Header, AuthGate, Loading, ErrorState } from '@/components/ui';
-import { useSession, useResource } from '@/components/providers';
-import { api, dateLabel, errorMessage } from '@/lib/api';
+import { useSession } from '@/components/providers';
+import { useLocalMessages, useLocalConversations } from '@/components/chat-hooks';
+import { queueMessage, readLocalMessages } from '@/lib/chat-store';
+import { reconcileConversation, chatApi } from '@/lib/chat-sync';
+import { dateLabel, errorMessage } from '@/lib/api';
 function Chat({ id }: { id: string }) {
-  const { user, lastMessage, connected, revision } = useSession();
+  const { user, connected } = useSession();
   const [text, setText] = useState(''),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(''),
-    [older, setOlder] = useState<ChatMessage[]>([]),
-    [cursor, setCursor] = useState<number | null>(null),
-    [loadingOlder, setLoadingOlder] = useState(false),
-    [tick, setTick] = useState(0);
-  const end = useRef<HTMLDivElement>(null);
-  const pending = useRef<{ content: string; clientId: string } | null>(null);
-  const chats = useResource<{ items: Conversation[] }>('/chats', revision);
-  const history = useResource<ChatHistory>(
-    '/chats/' + id + '/messages',
-    `${lastMessage?.conversationId === id ? lastMessage.id : ''}:${revision}:${tick}`,
-  );
-  const conversation = chats.data?.items.find((c) => c.id === id);
+    [error, setError] = useState('');
+  const [limit, setLimit] = useState(50),
+    [visibility, setVisibility] = useState(0);
+  const end = useRef<HTMLDivElement>(null),
+    sending = useRef(false);
+  const history = useLocalMessages(user?.id, id, limit);
+  const chats = useLocalConversations(user?.id);
+  const conversation = chats.data?.find((c) => c.id === id);
+  const messages = history.data?.items ?? [];
   useEffect(() => {
-    setOlder([]);
-    setCursor(null);
-    pending.current = null;
-  }, [id]);
+    setLimit(50);
+    setText('');
+    setError('');
+    if (!user) return;
+    const abort = new AbortController();
+    void reconcileConversation(user.id, id, abort.signal).catch((error) => {
+      if (!abort.signal.aborted) setError('暂未完成对账，本地记录仍可查看。' + errorMessage(error));
+    });
+    return () => abort.abort();
+  }, [user?.id, id]);
   useEffect(() => {
-    if (history.data && !older.length) setCursor(history.data.nextCursor);
-  }, [history.data, older.length]);
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (!connected && document.visibilityState === 'visible') setTick((n) => n + 1);
-    }, 5000);
-    const focus = () => {
-      if (document.visibilityState === 'visible') setTick((n) => n + 1);
-    };
+    const focus = () => setVisibility((n) => n + 1);
     document.addEventListener('visibilitychange', focus);
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', focus);
-    };
-  }, [connected]);
-  const newest = history.data?.items.at(-1)?.id;
+    return () => document.removeEventListener('visibilitychange', focus);
+  }, []);
+  const unreadIds = JSON.stringify(
+    messages.filter((m) => !m.read && m.state === 'sent').map((m) => m.id),
+  );
   useEffect(() => {
-    if (history.data && document.visibilityState === 'visible')
-      void api('/chats/' + id + '/read', { method: 'POST' }).catch(() => {});
+    if (!user || document.visibilityState !== 'visible') return;
+    const ids: string[] = JSON.parse(unreadIds);
+    if (!ids.length) return;
+    void (async () => {
+      await readLocalMessages(user.id, ids);
+      for (let offset = 0; offset < ids.length; offset += 100)
+        await chatApi(user.id, '/chats/' + id + '/read', {
+          method: 'POST',
+          body: JSON.stringify({ ids: ids.slice(offset, offset + 100) }),
+        });
+    })().catch(() => {});
+  }, [user?.id, id, unreadIds, visibility]);
+  const newest = messages.at(-1)?.id;
+  useEffect(() => {
     end.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [id, newest, tick]);
+  }, [newest]);
   async function send(e: FormEvent) {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (!user || !text.trim() || sending.current) return;
+    sending.current = true;
     setBusy(true);
     setError('');
-    if (pending.current?.content !== text.trim())
-      pending.current = { content: text.trim(), clientId: crypto.randomUUID() };
     try {
-      await api('/chats/' + id + '/messages', {
-        method: 'POST',
-        body: JSON.stringify(pending.current),
-      });
+      await queueMessage(user.id, id, text);
       setText('');
-      pending.current = null;
-      history.reload();
-    } catch (e) {
-      setError(errorMessage(e));
+    } catch (error) {
+      setError(errorMessage(error));
     } finally {
+      sending.current = false;
       setBusy(false);
     }
   }
-  async function loadOlder() {
-    if (cursor === null) return;
-    setLoadingOlder(true);
-    try {
-      const data = await api<ChatHistory>('/chats/' + id + '/messages?before=' + cursor);
-      setOlder((items) => [...data.items, ...items]);
-      setCursor(data.nextCursor);
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setLoadingOlder(false);
-    }
-  }
-  const merged = new Map<string, ChatMessage>();
-  for (const message of [...older, ...(history.data?.items ?? [])]) merged.set(message.id, message);
-  const messages = Array.from(merged.values());
   return (
     <>
       <Header
@@ -98,14 +84,13 @@ function Chat({ id }: { id: string }) {
           正在核对：{conversation.postTitle} <span>查看物品 →</span>
         </Link>
       )}
+      <p className="message-note muted small">
+        记录保存在当前浏览器；服务端仅保留最近 7 天用于补发。
+      </p>
       <div className="chat-messages">
-        {cursor !== null && (
-          <button
-            className="text-button load-older"
-            disabled={loadingOlder}
-            onClick={() => void loadOlder()}
-          >
-            {loadingOlder ? '加载中…' : '加载更早的消息'}
+        {history.data && history.data.total > limit && (
+          <button className="text-button load-older" onClick={() => setLimit((n) => n + 50)}>
+            加载更早的消息
           </button>
         )}
         {history.loading && !history.data ? (
@@ -124,7 +109,15 @@ function Chat({ id }: { id: string }) {
                     {conversation?.peer.name.slice(0, 1) ?? '同'}
                   </div>
                 )}
-                <p>{m.content}</p>
+                <div>
+                  <p>{m.content}</p>
+                  {m.state === 'pending' && (
+                    <span className="small muted">待发送，联网后自动重试</span>
+                  )}
+                  {m.state === 'failed' && (
+                    <span className="small form-error">发送失败：{m.failure}</span>
+                  )}
+                </div>
               </div>
             </div>
           ))
@@ -159,7 +152,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   return (
     <Frame nav={false}>
       <AuthGate>
-        <Chat id={id} />
+        <Chat key={id} id={id} />
       </AuthGate>
     </Frame>
   );

@@ -7,6 +7,8 @@ import type { Post, Conversation } from '@mayoimon/shared';
 import { Frame, Header, Loading, ErrorState, Illustration, Badge, Modal } from '@/components/ui';
 import { useSession, useResource } from '@/components/providers';
 import { api, dateLabel, errorMessage } from '@/lib/api';
+import { queueMessage, saveConversations } from '@/lib/chat-store';
+import { chatApi } from '@/lib/chat-sync';
 export default function DetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { user, revision, toast } = useSession();
@@ -19,7 +21,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     [photo, setPhoto] = useState<string | null>(null);
   const router = useRouter();
   const viewed = useRef('');
-  const initialClientId = useRef<string | null>(null);
   useEffect(() => {
     if (post && viewed.current !== id) {
       viewed.current = id;
@@ -58,15 +59,12 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
     setBusy(true);
     setError('');
     try {
-      const { conversation } = await api<{ conversation: Conversation }>('/chats', {
+      const { conversation } = await chatApi<{ conversation: Conversation }>(user!.id, '/chats', {
         method: 'POST',
         body: JSON.stringify({ postId: id }),
       });
-      initialClientId.current ??= crypto.randomUUID();
-      await api('/chats/' + conversation.id + '/messages', {
-        method: 'POST',
-        body: JSON.stringify({ content: text, clientId: initialClientId.current }),
-      });
+      await saveConversations(user!.id, [conversation]);
+      await queueMessage(user!.id, conversation.id, text);
       router.push('/messages/' + conversation.id);
     } catch (e) {
       setError(errorMessage(e));
@@ -187,7 +185,6 @@ export default function DetailPage({ params }: { params: Promise<{ id: string }>
             value={text}
             onChange={(e) => {
               setText(e.target.value);
-              initialClientId.current = null;
             }}
           />
           {error && (

@@ -5,6 +5,7 @@ import next from 'next';
 import nextEnv from '@next/env';
 import { getRuntime, closeRuntime } from './src/server/runtime.ts';
 import { attachChatSocket } from './src/server/modules/private-chat/socket.ts';
+import { createClientIpResolver } from './src/server/modules/infrastructure/client-ip.ts';
 
 const dev = process.argv.includes('--dev');
 const appDir = resolve(dirname(fileURLToPath(import.meta.url)), dev ? '.' : '..');
@@ -16,8 +17,12 @@ const port = Number(portIndex >= 0 ? process.argv[portIndex + 1] : (process.env.
 if (!Number.isInteger(port) || port < 1 || port > 65535)
   throw new Error('PORT must be between 1 and 65535');
 const hostname = process.env.HOST ?? '0.0.0.0';
+const clientIp = createClientIpResolver(process.env.TRUSTED_PROXIES);
 const server = createServer((req, res) => {
-  req.headers['x-mayoimon-client-ip'] = req.socket.remoteAddress ?? 'local';
+  req.headers['x-mayoimon-client-ip'] = clientIp(
+    req.socket.remoteAddress,
+    req.headers['x-forwarded-for'],
+  );
   void handle(req, res).catch((error) => {
     console.error(error);
     if (!res.headersSent) {

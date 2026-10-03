@@ -29,7 +29,7 @@ import { sendMessage } from '../src/server/modules/private-chat/service.ts';
 test('ORM opens a node:sqlite v1 database without changing rows, cursors or constraints', () => {
   const dir = mkdtempSync(join(tmpdir(), 'mayoimon-legacy-'));
   const path = join(dir, 'legacy.sqlite');
-  const now = '2026-01-01T00:00:00.000Z';
+  const now = new Date().toISOString();
   let db: Database | undefined;
   try {
     // Build the legacy file with the previous driver and immutable v1 DDL.
@@ -98,7 +98,12 @@ test('ORM opens a node:sqlite v1 database without changing rows, cursors or cons
     assert.equal(findConversations(db, 'alice')[0].lastMessage, '消息-19');
     saveReadCursors(db, ['chat'], 'alice');
     assert.equal(findConversations(db, 'alice')[0].unread, 0);
-    sendMessage(db, 'chat', 'bob', '新消息', 'new-client');
+    sendMessage(db, 'chat', 'bob', {
+      content: '新消息',
+      deviceId: 'new-device',
+      seqId: 1,
+      queuedAt: new Date().toISOString(),
+    });
     assert.equal(findChatHistory(db, 'chat', Number.MAX_SAFE_INTEGER, 1)[0].cursor, 20);
     assert.equal(findConversations(db, 'alice')[0].unread, 1);
 
@@ -121,7 +126,7 @@ test('ORM opens a node:sqlite v1 database without changing rows, cursors or cons
     db = new Database(path);
     assert.equal(findPost(db, 'post')?.views, 1);
     assert.equal(findConversations(db, 'alice')[0].unread, 1);
-    assert.equal(db.orm.select({ count: count() }).from(schemaMigrations).get()?.count, 1);
+    assert.equal(db.orm.select({ count: count() }).from(schemaMigrations).get()?.count, 2);
   } finally {
     db?.close();
     rmSync(dir, { recursive: true, force: true });

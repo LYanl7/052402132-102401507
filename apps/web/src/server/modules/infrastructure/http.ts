@@ -40,7 +40,7 @@ export function endpoint(handler: Handler, options: EndpointOptions = {}) {
   return async (request: Request, route?: RouteParams): Promise<Response> => {
     try {
       const ctx = getRuntime();
-      // Set by our Node server from the socket, overriding any incoming value.
+      // Set by our Node server after resolving trusted proxies, overriding input.
       const ip = request.headers.get('x-mayoimon-client-ip') ?? 'local';
       ctx.limit('all:' + ip, 300);
       if (options.rate) ctx.limit(new URL(request.url).pathname + ':' + ip, options.rate);

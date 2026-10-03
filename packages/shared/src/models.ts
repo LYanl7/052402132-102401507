@@ -40,8 +40,16 @@ export interface ChatMessage {
   conversationId: string;
   senderId: string;
   content: string;
-  clientId: string;
+  deviceId: string;
+  seqId: number;
   createdAt: string;
+  expiresAt: number;
+}
+export interface ChatSendInput {
+  deviceId: string;
+  seqId: number;
+  content: string;
+  queuedAt: string;
 }
 export interface Conversation {
   id: string;
@@ -60,7 +68,9 @@ export interface ProfileStats {
   drafts: number;
 }
 export type SocketEvent =
-  { type: 'message'; message: ChatMessage } | { type: 'ready' } | { type: 'session-expired' };
+  | { type: 'message'; message: ChatMessage }
+  | { type: 'ready'; ttlMs: number }
+  | { type: 'session-expired' };
 
 export interface ChatHistory {
   items: ChatMessage[];

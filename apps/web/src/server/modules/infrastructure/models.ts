@@ -6,6 +6,7 @@ export interface Context {
   dataDir: string;
   origins: string[];
   secureCookie: boolean;
+  chatTtlMs: number;
   emit: (userId: string, event: SocketEvent) => void;
   disconnect: (tokenHash: string) => void;
   limit: (key: string, max: number) => void;
@@ -24,6 +25,7 @@ export interface RuntimeOptions {
   dataDir?: string;
   origins?: string[];
   secureCookie?: boolean;
+  chatTtlMs?: number;
 }
 
 export type RouteParams = { params: Promise<Record<string, string>> };

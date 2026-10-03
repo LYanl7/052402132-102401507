@@ -66,18 +66,40 @@ PostInput 示例：
 
 ## 私聊
 
-| 方法  | 路径                      | 请求 / 返回                                                |
-| ----- | ------------------------- | ---------------------------------------------------------- |
-| GET*  | `/api/chats`              | `{items}`，包含对方、关联发布、最后消息和 unread           |
-| POST* | `/api/chats`              | `{postId}` → `{conversation}`，相同双方及发布复用          |
-| GET*  | `/api/chats/:id/messages` | limit/before → `{items,nextCursor}`，items 按发送顺序排列  |
-| POST* | `/api/chats/:id/messages` | `{content,clientId}` → `{message}`，clientId 是客户端 UUID |
-| POST* | `/api/chats/:id/read`     | 当前历史全部已读 → `{ok:true}`                             |
-| POST* | `/api/chats/read-all`     | 本人全部会话已读 → `{ok:true}`                             |
+服务端只保留 TTL 内的消息（默认 7 天）；客户端 IndexedDB 保存完整的已接收记录和待发送队列，服务器过期不会删除本地记录。
 
-消息长度为 1–2000 字符。同 senderId/clientId 的重试返回原消息；修改内容或会话却复用 clientId 返回 409。历史默认最近 50 条，最多 100 条；nextCursor 非 null 时传入 before 读取更早的消息。会话、发送、历史和已读全部检查成员权限。
+| 方法  | 路径                                | 请求 / 返回                                                                           |
+| ----- | ----------------------------------- | ------------------------------------------------------------------------------------- |
+| GET*  | `/api/chats`                        | `{items}`：会话元数据，服务端摘要及未读仅覆盖未过期消息                               |
+| POST* | `/api/chats`                        | `{postId}` → `{conversation}`，相同双方及发布复用                                     |
+| POST* | `/api/chats/:id/messages`           | `{content,deviceId,seqId,queuedAt}` → `{message}`                                     |
+| GET*  | `/api/chats/delivery?deviceId=UUID` | `{items,ttlMs}`，本设备未确认的消息，每批最多 50 条                                   |
+| POST* | `/api/chats/delivery`               | `{deviceId,ids}` → `{ok:true}`，本地事务提交后确认接收，最多 100 个 ID                |
+| GET*  | `/api/chats/:id/sync`               | `{ids,ttlMs}`：服务端最近 50 条未过期消息的 ID 清单                                   |
+| POST* | `/api/chats/:id/sync`               | `{ids}` → `{items,unavailable}`，按缺失 ID 补拉，已过期或不存在的 ID 放入 unavailable |
+| POST* | `/api/chats/:id/read`               | `{ids}` → `{ok:true}`，只标记客户端实际显示的消息，不隐式读取最新位置                 |
+| POST* | `/api/chats/read-all`               | 本人当前未过期消息全部已读；前端同时更新本地未读状态                                  |
+| GET*  | `/api/chats/:id/messages`           | 兼容的 TTL 内历史查询，limit/before → `{items,nextCursor}`；新客户端同步不依赖该游标  |
 
-WebSocket 地址：`ws://localhost:3000/ws`。请求需带会话 Cookie 及允许的 Origin。连接建立收到 `{"type":"ready"}`，新消息收到 `{"type":"message","message":ChatMessage}`。WebSocket 为推送通道，发送指令走上述 HTTP 接口。断线重新读取历史，不依赖内存消息。
+消息结构：`{id,conversationId,senderId,deviceId,seqId,content,createdAt,expiresAt}`。`id` 是服务端消息 UUID，`expiresAt` 是毫秒时间戳，`createdAt` 是服务端接收时间。`queuedAt` 为客户端将消息写入本地发送队列的 ISO 时间；消息长度 1–2000 字符。
+
+`deviceId` 是浏览器按账号持久化的随机 UUID，`seqId` 是该设备在该会话内分配的正安全整数。完整幂等键为 `(conversationId,senderId,deviceId,seqId)`。分配序号与写入本地队列处于同一个 IndexedDB 事务；多个标签页共用计数器和发送租约，按会话序号顺序提交。每条新消息递增，重试保留原标识。客户端没有累计同步游标。
+
+首次接收返回 201，同标识同内容重试返回原消息及 200，重用标识但修改内容返回 409。发送时间超过 TTL、已过期或低于已接收上界且不存在的序号返回 410；设备时间明显超前返回 400。服务端保留每个会话/发送设备的一个最大已接收序号，避免 TTL 删除正文后旧重试重新生成消息；该记录不包含消息内容。外部客户端同样需要按会话有序发送，不能先提交较大序号再提交未接收过的较小序号。
+
+所有聊天 HTTP 接口检查身份和成员权限。浏览器额外携带 `X-Chat-User-Id` 标识当前本地账号；如与 Cookie 身份不符则返回 401，防止切换账号时旧发送队列串号。ACK 只影响当前用户指定设备能够访问的消息；接收确认与已读分别存储。
+
+WebSocket 地址：`ws://localhost:3000/ws?deviceId=UUID`，需带登录 Cookie 和允许的 Origin：
+
+- 建立连接：`{"type":"ready","ttlMs":604800000}`。
+- 投递消息：`{"type":"message","message":ChatMessage}`。
+- 客户端本地持久化成功后回复：`{"type":"ack","ids":["消息UUID"]}`，每次最多 100 条。
+
+服务端每秒检查未确认消息，按 1、2、4、8、16、30 秒间隔退避重试，之后最多每 30 秒重投一次。每批 50 条，确认后继续下一批，不限制总离线积压为 50 条。ACK 丢失可能导致重复投递，客户端按 ID 覆盖合并且保留本地已读状态。重连及服务重启后从数据库恢复未确认集合；新设备能接收 TTL 内全部消息。
+
+WebSocket 不可用时，客户端每 5 秒用 HTTP 拉取未确认批次并 ACK；每轮最多处理 20 批，后续轮次继续处理。启动、重连、回到前台及周期检查时进行最近 50 条对账，按缺失 ID 补拉；清单与补拉之间过期的消息返回 unavailable，不会无限等待。所有本地存储写入失败均不发送 ACK。
+
+服务端启动及每分钟清理过期正文、接收确认和已读记录；即使尚未清理，过期消息也不会被查询或投递。过期且未送达的消息不再恢复；客户端记录不会自动过期。清除站点数据或更换浏览器后只能恢复服务端 TTL 内的内容。本项目没有离线网页壳，断网冷启动仍需要页面资源已可用。
 
 ## 健康检查
 

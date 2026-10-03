@@ -42,5 +42,7 @@ export const postInputSchema = z
   }) satisfies z.ZodType<PostInput>;
 export const chatInputSchema = z.object({
   content: z.string().trim().min(1, '请输入消息').max(2000),
-  clientId: z.uuid(),
+  deviceId: z.uuid(),
+  seqId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+  queuedAt: z.iso.datetime(),
 });

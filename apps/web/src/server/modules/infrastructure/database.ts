@@ -5,6 +5,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import * as schema from './schema.ts';
 import { migrationTableSql, initialSchemaSql } from './migrations/0001-initial.ts';
+import { chatDeliverySql } from './migrations/0002-chat-delivery.ts';
 
 export class Database {
   private readonly connection: BetterSqlite3.Database;
@@ -32,6 +33,18 @@ export class Database {
             this.connection.exec(initialSchemaSql);
             tx.insert(schema.schemaMigrations)
               .values({ version: 1, appliedAt: new Date().toISOString() })
+              .run();
+          }
+          if (
+            !tx
+              .select()
+              .from(schema.schemaMigrations)
+              .where(eq(schema.schemaMigrations.version, 2))
+              .get()
+          ) {
+            this.connection.exec(chatDeliverySql);
+            tx.insert(schema.schemaMigrations)
+              .values({ version: 2, appliedAt: new Date().toISOString() })
               .run();
           }
         },

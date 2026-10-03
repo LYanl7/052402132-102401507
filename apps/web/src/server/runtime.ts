@@ -9,6 +9,9 @@ import type { Context, RuntimeOptions } from './modules/infrastructure/models.ts
 const runtimeKey = Symbol.for('mayoimon.runtime');
 const globals = globalThis as typeof globalThis & { [runtimeKey]?: Context };
 export function createRuntime(options: RuntimeOptions = {}): Context {
+  const chatTtlMs = options.chatTtlMs ?? Number(process.env.CHAT_TTL_DAYS ?? 7) * 86400000;
+  if (!Number.isSafeInteger(chatTtlMs) || chatTtlMs <= 0)
+    throw new Error('CHAT_TTL_DAYS must be positive');
   // Local mutable data is supplied at runtime, outside the Next build output.
   const dataDir = resolve(
     /* turbopackIgnore: true */ options.dataDir ?? process.env.DATA_DIR ?? '../../data',
@@ -19,6 +22,7 @@ export function createRuntime(options: RuntimeOptions = {}): Context {
   let nextSweep = 0;
   return {
     db,
+    chatTtlMs,
     dataDir,
     origins:
       options.origins ??

@@ -205,7 +205,7 @@ test('API business flows, permissions, persistent storage and realtime delivery'
           (await call('POST', '/api/chats', { postId }, bob.cookie)).json().conversation.id,
           conversation.id,
         );
-        const socket = new WebSocket(`ws://127.0.0.1:${address.port}/ws`, {
+        const socket = new WebSocket(`ws://127.0.0.1:${address.port}/ws?deviceId=${randomUUID()}`, {
           headers: { cookie: alice.cookie, origin: 'http://localhost:3000' },
         });
         sockets.push(socket);
@@ -225,7 +225,12 @@ test('API business flows, permissions, persistent storage and realtime delivery'
             });
           },
         );
-        const message = { content: '我看到一串带蓝色挂件的钥匙', clientId: randomUUID() };
+        const message = {
+          content: '我看到一串带蓝色挂件的钥匙',
+          deviceId: randomUUID(),
+          seqId: 1,
+          queuedAt: new Date().toISOString(),
+        };
         const first = await call(
           'POST',
           '/api/chats/' + conversation.id + '/messages',
@@ -256,7 +261,7 @@ test('API business flows, permissions, persistent storage and realtime delivery'
             await call(
               'POST',
               '/api/chats/' + conversation.id + '/messages',
-              { ...message, clientId: randomUUID() },
+              { ...message, deviceId: randomUUID(), seqId: 1, queuedAt: new Date().toISOString() },
               eve.cookie,
             )
           ).statusCode,
@@ -267,7 +272,12 @@ test('API business flows, permissions, persistent storage and realtime delivery'
             .statusCode,
           404,
         );
-        await call('POST', '/api/chats/' + conversation.id + '/read', undefined, alice.cookie);
+        await call(
+          'POST',
+          '/api/chats/' + conversation.id + '/read',
+          { ids: [first.json().message.id] },
+          alice.cookie,
+        );
         assert.equal(
           (await call('GET', '/api/chats', undefined, alice.cookie)).json().items[0].unread,
           0,
@@ -275,7 +285,12 @@ test('API business flows, permissions, persistent storage and realtime delivery'
         await call(
           'POST',
           '/api/chats/' + conversation.id + '/messages',
-          { content: '谢谢，我来核对。', clientId: randomUUID() },
+          {
+            content: '谢谢，我来核对。',
+            deviceId: randomUUID(),
+            seqId: 1,
+            queuedAt: new Date().toISOString(),
+          },
           alice.cookie,
         );
         const page = (
@@ -407,7 +422,10 @@ test('API business flows, permissions, persistent storage and realtime delivery'
         [{ origin: 'http://localhost:3000' }, 401],
         [{ cookie: bob.cookie, origin: 'https://evil.example' }, 403],
       ] as const) {
-        const rejected = new WebSocket(`ws://127.0.0.1:${address.port}/ws`, { headers });
+        const rejected = new WebSocket(
+          `ws://127.0.0.1:${address.port}/ws?deviceId=${randomUUID()}`,
+          { headers },
+        );
         sockets.push(rejected);
         rejected.on('error', () => {});
         const response = await new Promise<number | undefined>((resolve, reject) => {
@@ -446,7 +464,7 @@ test('API business flows, permissions, persistent storage and realtime delivery'
           );
           assert.equal(
             reopened.orm.select({ count: count() }).from(schemaMigrations).get()?.count,
-            1,
+            2,
           );
         } finally {
           reopened.close();

@@ -1,12 +1,33 @@
 import { randomUUID } from 'node:crypto';
-import { conversationInputSchema, chatHistoryQuerySchema } from './schemas.ts';
+import {
+  conversationInputSchema,
+  chatHistoryQuerySchema,
+  deviceSchema,
+  messageIdsSchema,
+  ackSchema,
+} from './schemas.ts';
 import { chatInputSchema } from '@mayoimon/shared';
-import { userId, AppError } from '../infrastructure/context.ts';
+import { userId as authenticatedUser, AppError } from '../infrastructure/context.ts';
 import { getPost } from '../message/service.ts';
 import { participant, listConversations, sendMessage } from './service.ts';
 
-import { getOrCreateConversation, findChatHistory, saveReadCursors } from './repository.ts';
+import {
+  getOrCreateConversation,
+  findChatHistory,
+  saveReadCursors,
+  pendingMessages,
+  acknowledge,
+  messagesByIds,
+  markMessagesRead,
+} from './repository.ts';
 import { endpoint, json } from '../infrastructure/http.ts';
+import type { RequestContext } from '../infrastructure/models.ts';
+function userId(req: RequestContext) {
+  const id = authenticatedUser(req);
+  const expected = req.request.headers.get('x-chat-user-id');
+  if (expected && expected !== id) throw new AppError(401, '登录账号已变更，请刷新页面');
+  return id;
+}
 export const conversations = endpoint(
   async (req, ctx) => ({
     items: listConversations(ctx.db, userId(req)),
@@ -55,7 +76,7 @@ export const chatHistory = endpoint(
 export const sendChatMessage = endpoint(
   async (req, ctx) => {
     const p = chatInputSchema.parse(req.body);
-    const result = sendMessage(ctx.db, req.params.id, userId(req), p.content, p.clientId);
+    const result = sendMessage(ctx.db, req.params.id, userId(req), p, ctx.chatTtlMs);
     if (result.created) {
       ctx.emit(userId(req), { type: 'message', message: result.message });
       ctx.emit(result.peer, { type: 'message', message: result.message });
@@ -67,8 +88,43 @@ export const sendChatMessage = endpoint(
 export const markRead = endpoint(
   async (req, ctx) => {
     participant(ctx.db, req.params.id, userId(req));
-    saveReadCursors(ctx.db, [req.params.id], userId(req));
+    markMessagesRead(ctx.db, userId(req), messageIdsSchema.parse(req.body).ids, req.params.id);
     return { ok: true };
+  },
+  { auth: true },
+);
+
+export const pendingDelivery = endpoint(
+  (req, ctx) => ({
+    items: pendingMessages(ctx.db, userId(req), deviceSchema.parse(req.query).deviceId),
+    ttlMs: ctx.chatTtlMs,
+  }),
+  { auth: true },
+);
+export const acknowledgeDelivery = endpoint(
+  (req, ctx) => {
+    const input = ackSchema.parse(req.body);
+    acknowledge(ctx.db, userId(req), input.deviceId, input.ids);
+    return { ok: true };
+  },
+  { auth: true },
+);
+export const recentManifest = endpoint(
+  (req, ctx) => {
+    participant(ctx.db, req.params.id, userId(req));
+    return {
+      ids: findChatHistory(ctx.db, req.params.id, Number.MAX_SAFE_INTEGER, 50).map((m) => m.id),
+      ttlMs: ctx.chatTtlMs,
+    };
+  },
+  { auth: true },
+);
+export const fetchMissing = endpoint(
+  (req, ctx) => {
+    participant(ctx.db, req.params.id, userId(req));
+    const { ids } = messageIdsSchema.parse(req.body);
+    const items = messagesByIds(ctx.db, userId(req), ids, req.params.id);
+    return { items, unavailable: ids.filter((id) => !items.some((m) => m.id === id)) };
   },
   { auth: true },
 );

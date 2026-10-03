@@ -1,29 +1,23 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import type { Conversation } from '@mayoimon/shared';
 import { Frame, Header, AuthGate, Loading, ErrorState, Empty } from '@/components/ui';
-import { useSession, useResource } from '@/components/providers';
-import { api, dateLabel, errorMessage } from '@/lib/api';
+import { useSession } from '@/components/providers';
+import { dateLabel, errorMessage } from '@/lib/api';
+import { useLocalConversations } from '@/components/chat-hooks';
+import { readAllLocal } from '@/lib/chat-store';
+import { chatApi } from '@/lib/chat-sync';
 function Messages() {
-  const { lastMessage, connected, revision, toast } = useSession();
-  const [tick, setTick] = useState(0),
-    [unreadOnly, setUnreadOnly] = useState(false),
+  const { user, connected, toast } = useSession();
+  const [unreadOnly, setUnreadOnly] = useState(false),
     [busy, setBusy] = useState(false);
-  const result = useResource<{ items: Conversation[] }>(
-    '/chats',
-    `${lastMessage?.id ?? ''}:${revision}:${tick}`,
-  );
-  useEffect(() => {
-    if (connected) return;
-    const timer = setInterval(() => setTick((n) => n + 1), 5000);
-    return () => clearInterval(timer);
-  }, [connected]);
-  const items = result.data?.items ?? [];
+  const result = useLocalConversations(user?.id);
+  const items = result.data ?? [];
   async function readAll() {
     setBusy(true);
     try {
-      await api('/chats/read-all', { method: 'POST' });
+      await readAllLocal(user!.id);
+      void chatApi(user!.id, '/chats/read-all', { method: 'POST' }).catch(() => {});
       result.reload();
       toast('已全部标记为已读');
     } catch (e) {
