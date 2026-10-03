@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { Frame, Header, AuthGate, Loading, ErrorState } from '@/components/ui';
 import { useSession } from '@/components/providers';
 import { useLocalMessages, useLocalConversations } from '@/components/chat-hooks';
-import { queueMessage, readLocalMessages } from '@/lib/chat-store';
-import { reconcileConversation, chatApi } from '@/lib/chat-sync';
+import { queueMessage, readLocalMessages } from '@/modules/private-chat/store';
+import { reconcileConversation, chatApi } from '@/modules/private-chat/sync';
 import { dateLabel, errorMessage } from '@/lib/api';
 function Chat({ id }: { id: string }) {
   const { user, connected } = useSession();

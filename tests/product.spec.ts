@@ -1,7 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
 
 test('Mobile product flow: publish, search, favorites, history, two-user live chat, edit and complete', async ({
   page,
@@ -156,19 +154,12 @@ test('Drafts and photo upload survive reload; validation and mobile layout', asy
 test('Prototype pages render at mobile and desktop widths without horizontal overflow', async ({
   page,
 }) => {
-  const screenshots = resolve('docs/screenshots');
-  mkdirSync(screenshots, { recursive: true });
-  for (const [path, name] of [
-    ['/', 'home'],
-    ['/search', 'search'],
-    ['/nearby', 'nearby'],
-  ] as const) {
+  for (const path of ['/', '/search', '/nearby']) {
     await page.goto(path);
     await expect(page.getByRole('status').filter({ hasText: '正在加载' })).toHaveCount(0);
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
       .toBe(true);
-    await page.screenshot({ path: resolve(screenshots, name + '.png'), fullPage: false });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');

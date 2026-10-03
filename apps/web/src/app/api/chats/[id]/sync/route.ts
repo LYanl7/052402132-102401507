@@ -1,5 +1,2 @@
-export {
-  recentManifest as GET,
-  fetchMissing as POST,
-} from '@/server/modules/private-chat/handlers';
+export { recentManifest as GET, fetchMissing as POST } from '@/modules/private-chat/handlers';
 export const runtime = 'nodejs';

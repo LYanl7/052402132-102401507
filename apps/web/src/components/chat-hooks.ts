@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { loadConversations, loadMessages, subscribeChat } from '@/lib/chat-store';
+import { loadConversations, loadMessages, subscribeChat } from '@/modules/private-chat/store';
 import { errorMessage } from '@/lib/api';
 function useLocalData<T>(user: string | undefined, load: () => Promise<T>) {
   const [data, setData] = useState<T | null>(null);

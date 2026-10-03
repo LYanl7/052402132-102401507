@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import type { PostList } from '@mayoimon/shared';
+import type { PostList } from '../modules/message/models.ts';
 import { Frame, PostCard, SearchLink, Loading, Empty, ErrorState } from '@/components/ui';
 import { useResource } from '@/components/providers';
 export default function HomePage() {

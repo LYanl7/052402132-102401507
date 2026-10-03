@@ -8,10 +8,10 @@ import { createServer } from 'node:http';
 import WebSocket from 'ws';
 import { eq, count } from 'drizzle-orm';
 import { createRuntime, setRuntime, closeRuntime } from '../src/server/runtime.ts';
-import { insertUser } from '../src/server/modules/user/repository.ts';
-import { sessionCookie } from '../src/server/modules/user/session.ts';
-import { savePost } from '../src/server/modules/message/service.ts';
-import { sendMessage } from '../src/server/modules/private-chat/service.ts';
+import { insertUser } from '../src/modules/user/repository.ts';
+import { sessionCookie } from '../src/modules/user/session.ts';
+import { savePost } from '../src/modules/message/service.ts';
+import { sendMessage } from '../src/modules/private-chat/service.ts';
 import {
   getOrCreateConversation,
   pendingMessages,
@@ -19,13 +19,9 @@ import {
   purgeExpiredMessages,
   findConversations,
   markMessagesRead,
-} from '../src/server/modules/private-chat/repository.ts';
-import { attachChatSocket } from '../src/server/modules/private-chat/socket.ts';
-import {
-  chatMessages,
-  chatReceipts,
-  chatReads,
-} from '../src/server/modules/infrastructure/schema.ts';
+} from '../src/modules/private-chat/repository.ts';
+import { attachChatSocket } from '../src/modules/private-chat/socket.ts';
+import { chatMessages, chatReceipts, chatReads } from '../src/modules/private-chat/schema.ts';
 import { invokeRoute } from './route-harness.ts';
 
 function fixture() {

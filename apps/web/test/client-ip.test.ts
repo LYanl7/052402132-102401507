@@ -4,8 +4,8 @@ import { createServer } from 'node:http';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
-import { createClientIpResolver } from '../src/server/modules/infrastructure/client-ip.ts';
-import { endpoint } from '../src/server/modules/infrastructure/http.ts';
+import { createClientIpResolver } from '../src/modules/infrastructure/client-ip.ts';
+import { endpoint } from '../src/modules/infrastructure/http.ts';
 import { createRuntime, setRuntime, closeRuntime } from '../src/server/runtime.ts';
 
 test('Direct and untrusted connections cannot select their IP via forwarding headers', () => {

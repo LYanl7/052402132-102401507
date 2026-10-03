@@ -1,3 +1,3 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export { myPosts as GET } from '@/server/modules/message/handlers';
+export { myPosts as GET } from '@/modules/message/handlers';

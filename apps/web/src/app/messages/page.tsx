@@ -5,8 +5,8 @@ import { Frame, Header, AuthGate, Loading, ErrorState, Empty } from '@/component
 import { useSession } from '@/components/providers';
 import { dateLabel, errorMessage } from '@/lib/api';
 import { useLocalConversations } from '@/components/chat-hooks';
-import { readAllLocal } from '@/lib/chat-store';
-import { chatApi } from '@/lib/chat-sync';
+import { readAllLocal } from '@/modules/private-chat/store';
+import { chatApi } from '@/modules/private-chat/sync';
 function Messages() {
   const { user, connected, toast } = useSession();
   const [unreadOnly, setUnreadOnly] = useState(false),

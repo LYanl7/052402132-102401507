@@ -1,6 +1,6 @@
 'use client';
 import { use, useState } from 'react';
-import type { Post } from '@mayoimon/shared';
+import type { Post } from '../../../modules/message/models.ts';
 import {
   Frame,
   Header,

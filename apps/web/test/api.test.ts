@@ -1,5 +1,6 @@
 import { count, eq } from 'drizzle-orm';
-import { posts, schemaMigrations } from '../src/server/modules/infrastructure/schema.ts';
+import { posts } from '../src/modules/message/schema.ts';
+import { schemaMigrations } from '../src/modules/infrastructure/schema.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -9,9 +10,9 @@ import { randomUUID } from 'node:crypto';
 import WebSocket from 'ws';
 import { createServer } from 'node:http';
 import { createRuntime, setRuntime, closeRuntime } from '../src/server/runtime.js';
-import { attachChatSocket } from '../src/server/modules/private-chat/socket.js';
+import { attachChatSocket } from '../src/modules/private-chat/socket.js';
 import { invokeRoute } from './route-harness.js';
-import { Database } from '../src/server/modules/infrastructure/database.js';
+import { Database } from '../src/modules/infrastructure/database.js';
 
 test('API business flows, permissions, persistent storage and realtime delivery', async (t) => {
   const temp = mkdtempSync(join(tmpdir(), 'mayoimon-api-'));

@@ -1,3 +1,3 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export { login as POST } from '@/server/modules/user/handlers';
+export { login as POST } from '@/modules/user/handlers';

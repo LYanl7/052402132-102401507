@@ -16,7 +16,7 @@ import {
   LoaderCircle,
   X,
 } from 'lucide-react';
-import type { Post } from '@mayoimon/shared';
+import type { Post } from '../modules/message/models.ts';
 import { dateLabel } from '@/lib/api';
 import { useSession } from './providers';
 

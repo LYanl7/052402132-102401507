@@ -1,7 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { List, Check, ChevronRight } from 'lucide-react';
-import type { Post, ProfileStats } from '@mayoimon/shared';
+import type { Post } from '../../modules/message/models.ts';
+import type { ProfileStats } from '../../modules/interaction/models.ts';
 import { Frame, Header, AuthGate, Loading, ErrorState } from '@/components/ui';
 import { useSession, useResource } from '@/components/providers';
 function Profile() {

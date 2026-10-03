@@ -6,13 +6,15 @@ export default defineConfig({
   workers: 1,
   timeout: 60000,
   expect: { timeout: 10000 },
-  reporter: 'list',
+  reporter: [['list'], ['./scripts/test-log-reporter.ts'], ['./scripts/discard-test-output.ts']],
+  preserveOutput: 'never',
   use: {
     baseURL: 'http://127.0.0.1:3001',
     ...devices['Pixel 7'],
     viewport: { width: 390, height: 844 },
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
+    trace: 'off',
+    screenshot: 'off',
+    video: 'off',
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
   webServer: [

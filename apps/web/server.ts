@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 import next from 'next';
 import nextEnv from '@next/env';
 import { getRuntime, closeRuntime } from './src/server/runtime.ts';
-import { attachChatSocket } from './src/server/modules/private-chat/socket.ts';
-import { createClientIpResolver } from './src/server/modules/infrastructure/client-ip.ts';
+import { attachChatSocket } from './src/modules/private-chat/socket.ts';
+import { createClientIpResolver } from './src/modules/infrastructure/client-ip.ts';
 
 const dev = process.argv.includes('--dev');
 const appDir = resolve(dirname(fileURLToPath(import.meta.url)), dev ? '.' : '..');

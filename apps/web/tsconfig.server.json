@@ -11,5 +11,5 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true
   },
-  "include": ["server.ts", "src/server/**/*.ts"]
+  "include": ["server.ts", "src/server/**/*.ts", "src/modules/**/*.ts"]
 }

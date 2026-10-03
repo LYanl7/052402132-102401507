@@ -47,16 +47,14 @@ mayoimono/
       uploads/[filename]/   图片读取接口
     src/components/         表单、导航、会话和通用 UI
     src/lib/                浏览器 HTTP 客户端
-    src/server/
-      runtime.ts            进程内共享数据库和实时推送上下文
-      modules/
-        user/               用户、密码和会话
-        interaction/        收藏和浏览历史
-        private-chat/       会话、消息、未读和 WebSocket
-        message/            寻物/招领发布、查询、状态和距离
-        infrastructure/     SQLite、迁移、上传、错误和请求处理
+    src/server/runtime.ts   进程内共享数据库和实时推送上下文
+    src/modules/            按业务模块组织，模型与逻辑在同一目录内分文件
+      user/                 用户模型、表定义、校验、注册登录和会话
+      interaction/          收藏与历史模型、表定义和仓储
+      private-chat/         私聊模型、表定义、服务、本地存储和同步
+      message/              发布模型、表定义、校验、查询和状态逻辑
+      infrastructure/       数据库连接、迁移、上传、错误和请求处理
     test/                   Route Handler 业务与权限集成测试
-  packages/shared/          前后端共享类型、Zod 输入校验和地点数据
   tests/                    Playwright 浏览器流程测试
   data/                     本机数据库和上传图片（不入 Git）
   docs/                     架构、API、部署说明与页面截图
@@ -64,7 +62,7 @@ mayoimono/
 
 前后端按代码职责分离：浏览器组件通过 HTTP/WebSocket 使用服务端，不直接访问数据库。Next.js Route Handlers 调用五个业务模块，生产环境只运行一个 Node 进程。普通接口由 Next.js 处理，`server.ts` 负责启动服务并挂载 `/ws`，不另建后端框架。详见 [架构说明](docs/architecture.md)。
 
-数据库表模型位于 `infrastructure/schema.ts`，各模块的 `repository.ts` 使用 Drizzle 封装读写，`handlers.ts` / `service.ts` 保留业务逻辑。SQLite 驱动采用 `better-sqlite3`，现有数据库和 v1 迁移记录可继续使用。
+各业务模块的 `models.ts` 定义数据类型、`schema.ts` 定义数据库表，旁边的 `repository.ts` 使用 Drizzle 封装读写，`handlers.ts` / `service.ts` 保留业务逻辑。SQLite 驱动采用 `better-sqlite3`，现有数据库和 v1 迁移记录可继续使用。
 
 ## 构建与验证
 
@@ -84,7 +82,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-浏览器测试还验证本地存储失败不 ACK、超过 50 条离线积压、最近消息对账、刷新后的发送队列和多标签页序号分配。浏览器测试在 3001 启动一个独立 Next.js 服务，使用 `data/e2e/` 数据库，验证发布—搜索—收藏—联系—两账号实时聊天—编辑—完成及草稿照片流程。请保持 3001 端口空闲。生成的页面截图位于 `docs/screenshots/`，失败时保留 trace 与截图。
+浏览器测试还验证本地存储失败不 ACK、超过 50 条离线积压、最近消息对账、刷新后的发送队列和多标签页序号分配。浏览器测试在 3001 启动一个独立 Next.js 服务，使用 `data/e2e/` 数据库，验证发布—搜索—收藏—联系—两账号实时聊天—编辑—完成及草稿照片流程。请保持 3001 端口空闲。测试仅在终端报告结果，关闭 trace、截图和视频，结束时清理 `test-results/`（包括最后运行记录）。需要页面预览图时单独运行 `preview:screenshots`。
 
 已构建后可用生产服务跑同一套测试：
 

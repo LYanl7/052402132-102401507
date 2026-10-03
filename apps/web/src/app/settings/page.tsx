@@ -1,7 +1,7 @@
 'use client';
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import type { User } from '@mayoimon/shared';
+import type { User } from '../../modules/user/models.ts';
 import { Frame, Header, AuthGate } from '@/components/ui';
 import { useSession } from '@/components/providers';
 import { api, errorMessage } from '@/lib/api';

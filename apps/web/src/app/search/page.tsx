@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { Search } from 'lucide-react';
-import { categories, type PostList } from '@mayoimon/shared';
+import { categories } from '../../modules/message/constants.ts';
+import type { PostList } from '../../modules/message/models.ts';
 import { Frame, Header, PostRow, Loading, Empty, ErrorState } from '@/components/ui';
 import { useResource } from '@/components/providers';
 export default function SearchPage() {

@@ -3,12 +3,13 @@ import { use, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Heart, Eye } from 'lucide-react';
-import type { Post, Conversation } from '@mayoimon/shared';
+import type { Post } from '../../../modules/message/models.ts';
+import type { Conversation } from '../../../modules/private-chat/models.ts';
 import { Frame, Header, Loading, ErrorState, Illustration, Badge, Modal } from '@/components/ui';
 import { useSession, useResource } from '@/components/providers';
 import { api, dateLabel, errorMessage } from '@/lib/api';
-import { queueMessage, saveConversations } from '@/lib/chat-store';
-import { chatApi } from '@/lib/chat-sync';
+import { queueMessage, saveConversations } from '@/modules/private-chat/store';
+import { chatApi } from '@/modules/private-chat/sync';
 export default function DetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { user, revision, toast } = useSession();

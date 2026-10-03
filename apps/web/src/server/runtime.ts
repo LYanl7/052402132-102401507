@@ -1,8 +1,8 @@
 import { mkdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { Database } from './modules/infrastructure/database.ts';
-import { AppError } from './modules/infrastructure/context.ts';
-import type { Context, RuntimeOptions } from './modules/infrastructure/models.ts';
+import { Database } from '../modules/infrastructure/database.ts';
+import { AppError } from '../modules/infrastructure/context.ts';
+import type { Context, RuntimeOptions } from '../modules/infrastructure/models.ts';
 
 // Next bundles Route Handlers separately from the custom server. Both share this
 // process-global runtime, so HTTP writes reach the same WebSocket subscribers.

@@ -2,7 +2,7 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { KeyRound } from 'lucide-react';
-import type { User } from '@mayoimon/shared';
+import type { User } from '../../modules/user/models.ts';
 import { Frame, Header } from '@/components/ui';
 import { useSession } from '@/components/providers';
 import { api, errorMessage } from '@/lib/api';

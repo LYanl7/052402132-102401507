@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { LocateFixed } from 'lucide-react';
-import { campusCenter, type Post } from '@mayoimon/shared';
+import { campusCenter } from '../../modules/message/constants.ts';
+import type { Post } from '../../modules/message/models.ts';
 import { Frame, Header, PostRow, Loading, Empty, ErrorState } from '@/components/ui';
 import { useResource, useSession } from '@/components/providers';
 export default function NearbyPage() {

@@ -8,10 +8,11 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import type { User, ChatMessage } from '@mayoimon/shared';
-import type { SessionContext } from '@/models/session';
+import type { User } from '../modules/user/models.ts';
+import type { ChatMessage } from '../modules/private-chat/models.ts';
+import type { SessionContext } from '@/modules/user/models';
 import { api, errorMessage } from '@/lib/api';
-import { startChatSync } from '@/lib/chat-sync';
+import { startChatSync } from '@/modules/private-chat/sync';
 
 const Context = createContext<SessionContext>(null!);
 export function Providers({ children }: { children: ReactNode }) {

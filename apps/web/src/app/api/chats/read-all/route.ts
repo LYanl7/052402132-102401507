@@ -1,3 +1,3 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export { markAllRead as POST } from '@/server/modules/private-chat/handlers';
+export { markAllRead as POST } from '@/modules/private-chat/handlers';

@@ -5,26 +5,22 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { count } from 'drizzle-orm';
-import { Database } from '../src/server/modules/infrastructure/database.ts';
+import { Database } from '../src/modules/infrastructure/database.ts';
 import {
   migrationTableSql,
   initialSchemaSql,
-} from '../src/server/modules/infrastructure/migrations/0001-initial.ts';
-import { schemaMigrations } from '../src/server/modules/infrastructure/schema.ts';
-import { findPost, insertPost, searchPosts } from '../src/server/modules/message/repository.ts';
-import { querySchema } from '../src/server/modules/message/schemas.ts';
-import {
-  findSessionUser,
-  findUserByEmail,
-  insertUser,
-} from '../src/server/modules/user/repository.ts';
-import { recordPostView } from '../src/server/modules/interaction/repository.ts';
+} from '../src/modules/infrastructure/migrations/0001-initial.ts';
+import { schemaMigrations } from '../src/modules/infrastructure/schema.ts';
+import { findPost, insertPost, searchPosts } from '../src/modules/message/repository.ts';
+import { querySchema } from '../src/modules/message/schemas.ts';
+import { findSessionUser, findUserByEmail, insertUser } from '../src/modules/user/repository.ts';
+import { recordPostView } from '../src/modules/interaction/repository.ts';
 import {
   findChatHistory,
   findConversations,
   saveReadCursors,
-} from '../src/server/modules/private-chat/repository.ts';
-import { sendMessage } from '../src/server/modules/private-chat/service.ts';
+} from '../src/modules/private-chat/repository.ts';
+import { sendMessage } from '../src/modules/private-chat/service.ts';
 
 test('ORM opens a node:sqlite v1 database without changing rows, cursors or constraints', () => {
   const dir = mkdtempSync(join(tmpdir(), 'mayoimon-legacy-'));

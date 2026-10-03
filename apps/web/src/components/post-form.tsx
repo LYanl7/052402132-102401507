@@ -2,13 +2,9 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, X } from 'lucide-react';
-import {
-  categories,
-  campusPlaces,
-  postInputSchema,
-  type Post,
-  type PostInput,
-} from '@mayoimon/shared';
+import { categories, campusPlaces } from '../modules/message/constants.ts';
+import { postInputSchema } from '../modules/message/schemas.ts';
+import type { Post, PostInput } from '../modules/message/models.ts';
 import { api, errorMessage } from '@/lib/api';
 import { useSession } from './providers';
 import { Loading, ErrorState } from './ui';

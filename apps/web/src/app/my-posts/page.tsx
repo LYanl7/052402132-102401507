@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import type { Post, ProfileStats } from '@mayoimon/shared';
+import type { Post } from '../../modules/message/models.ts';
+import type { ProfileStats } from '../../modules/interaction/models.ts';
 import {
   Frame,
   Header,

@@ -30,19 +30,29 @@ flowchart LR
 | `message`        | 寻物/招领、搜索过滤、附近查询、草稿、状态、作者权限       | 数据库、共享输入校验                |
 | `infrastructure` | 数据库连接与事务、版本迁移、上传、异常、请求上下文        | Node 本地能力、Web Request/Response |
 
-模块位于 `apps/web/src/server/modules/`。`src/app/api/**/route.ts` 仅导出 HTTP 方法和运行时配置；各模块的 `handlers.ts` 负责参数解析、认证和返回，发布与私聊的业务操作位于 `service.ts`。基础设施中的 `http.ts` 统一处理 Web Request/Response、来源检查、频率和请求大小限制、异常格式。共享包提供 TypeScript 类型和 Zod schema，服务端最终校验输入，浏览器预校验用于提示用户。
+模块位于 `apps/web/src/modules/`。`src/app/api/**/route.ts` 仅导出 HTTP 方法和运行时配置；各模块的 `handlers.ts` 负责参数解析、认证和返回，发布与私聊的业务操作位于 `service.ts`。基础设施中的 `http.ts` 统一处理 Web Request/Response、来源检查、频率和请求大小限制、异常格式。每个模块提供自己的数据类型和 Zod 校验，页面按模块直接导入；服务端最终校验输入，浏览器预校验用于提示用户。
 
-数据模型与执行逻辑按以下文件边界组织：
+数据模型和业务逻辑放在同一模块文件夹下，按文件职责分离：
 
-- `packages/shared/src/models.ts`：前后端共享的数据结构，包括用户、发布信息、聊天消息、历史分页和统计；只声明类型，不依赖校验或业务实现。
-- `packages/shared/src/schemas.ts`：输入解析、默认值和发布校验规则；发布校验的输出通过 `satisfies z.ZodType<PostInput>` 与共享模型保持类型兼容。
-- `packages/shared/src/constants.ts`：类别标签与校园示例地点；`index.ts` 仅汇总导出，保留现有包入口。
-- 服务端模块的 `models.ts`：由 Drizzle 表定义推导的数据库行类型、查询输入或基础设施上下文类型；`schemas.ts`：接口输入校验。`handlers.ts` 和 `service.ts` 处理请求与业务，`repository.ts` 封装数据库操作。
-- `apps/web/src/models/session.ts`：浏览器会话状态契约，与 Provider 的连接和状态更新逻辑分开。
-- `infrastructure/schema.ts`：Drizzle 表、字段映射、约束与索引模型；`database.ts` 创建 `better-sqlite3` 连接和 Drizzle 实例，执行版本迁移。
-- `infrastructure/migrations/0001-initial.ts`：保留原始 v1 建表 SQL，沿用 `schema_migrations` 记录；已有数据库不重建表，保留原始 rowid。
+```text
+apps/web/src/modules/
+  message/
+    models.ts       发布信息的数据类型
+    schema.ts       Drizzle 发布信息表模型
+    schemas.ts      发布和查询校验
+    constants.ts    类别与校园地点
+    repository.ts   数据库读写
+    service.ts      作者权限、发布状态等业务规则
+    handlers.ts     HTTP 请求处理
+  user/             同样组织用户模型、表定义、校验和业务逻辑
+  interaction/      同样组织收藏、历史与统计
+  private-chat/     同样组织私聊，并包含 store.ts 本地存储、sync.ts 同步逻辑
+  infrastructure/   数据库连接、迁移、上传和通用请求处理
+```
 
-新增或调整模型时在对应模型文件中维护。权限与状态规则留在业务层；查询、写入及数据库事务留在仓储层，业务层不拼接 SQL。表模型与业务逻辑分开维护。
+`models.ts` 只声明类型，通过 `import type` 使用；`schema.ts` 定义本模块的数据库表；`schemas.ts` 执行输入校验。前端按所属模块导入模型和校验，不经过独立共享包，也不导入服务端数据库实现。`private-chat/models.ts` 包含消息、会话与本地消息状态；`user/models.ts` 包含用户及会话上下文类型。
+
+基础设施只定义上传记录和迁移记录等通用表。`database.ts` 汇集各模块的表模型建立 Drizzle 实例；`migrations/` 保留已应用的版本化迁移。业务表不集中堆放到基础设施中。权限与状态规则留在业务层；查询、写入及数据库事务留在同目录的仓储文件中。
 
 数据库读写使用 Drizzle ORM 0.45.3 的 `better-sqlite3` 驱动。仓储使用类型化的 `select`、`insert`、`update`、`delete`、条件表达式和冲突处理；Drizzle 自动映射数据库下划线字段和 TypeScript 驼峰字段，并转换图片 JSON。`rowid`、`instr`、聚合与条件表达式通过 Drizzle 的参数化 `sql` 模板补充，不直接调用驱动执行业务 SQL。消息写入、序号上界与会话更新时间、浏览次数与历史记录、已读批量更新使用 Drizzle 的同步事务，保持 `BEGIN IMMEDIATE` 语义。连接参数和版本化建表 DDL 是仅有的驱动层操作。
 
