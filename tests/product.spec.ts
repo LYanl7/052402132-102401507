@@ -1,5 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { mockBaiduMap } from './helpers/baidu-map';
+
+test.beforeEach(async ({ page }) => {
+  await mockBaiduMap(page);
+});
 
 test('Mobile product flow: publish, search, favorites, history, two-user live chat, edit and complete', async ({
   page,
@@ -40,6 +45,9 @@ test('Mobile product flow: publish, search, favorites, history, two-user live ch
   await page.getByRole('textbox', { name: '物品名称', exact: true }).fill(title);
   await page.getByRole('combobox', { name: '物品类别' }).selectOption('keys');
   await page.getByRole('combobox', { name: '地点', exact: true }).fill('图书馆 · 2楼');
+  await page.locator('summary').filter({ hasText: '地图位置' }).click();
+  await page.getByRole('spinbutton', { name: '地图纬度' }).fill('26.0588');
+  await page.getByRole('spinbutton', { name: '地图经度' }).fill('119.1968');
   await page.getByRole('textbox', { name: '发生时间' }).fill('2026-09-27T14:20');
   await page
     .getByRole('textbox', { name: '详细描述' })

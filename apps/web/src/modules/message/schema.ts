@@ -20,6 +20,9 @@ export const posts = sqliteTable(
     images: text('images', { mode: 'json' }).$type<string[]>().notNull().default([]),
     lat: real('lat'),
     lng: real('lng'),
+    coordinateSystem: text('coordinate_system', { enum: ['legacy', 'bd09'] })
+      .notNull()
+      .default('legacy'),
     status: text('status', { enum: ['active', 'draft', 'completed'] }).notNull(),
     views: integer('views').notNull().default(0),
     createdAt: text('created_at').notNull(),
@@ -31,5 +34,6 @@ export const posts = sqliteTable(
     check('posts_status', sql`${t.status} IN ('active','draft','completed')`),
     index('posts_public').on(t.status, t.deletedAt, t.createdAt),
     index('posts_owner').on(t.userId, t.status),
+    index('posts_nearby').on(t.status, t.deletedAt, t.coordinateSystem, t.lat, t.lng),
   ],
 );

@@ -18,6 +18,7 @@ export interface PostInput {
   images: string[];
   lat: number | null;
   lng: number | null;
+  coordinateSystem?: 'bd09' | 'legacy';
   status: 'active' | 'draft';
 }
 

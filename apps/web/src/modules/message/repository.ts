@@ -85,6 +85,8 @@ export function findNearbyPosts(
         isNull(posts.deletedAt),
         eq(posts.status, 'active'),
         isNotNull(posts.lat),
+        isNotNull(posts.lng),
+        eq(posts.coordinateSystem, 'bd09'),
         type ? eq(posts.type, type) : undefined,
       ),
     )

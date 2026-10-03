@@ -38,6 +38,7 @@ export const postInputSchema = z
       .default([]),
     lat: z.number().min(-90).max(90).nullable().default(null),
     lng: z.number().min(-180).max(180).nullable().default(null),
+    coordinateSystem: z.enum(['bd09', 'legacy']).default('bd09'),
     status: z.enum(['active', 'draft']).default('active'),
   })
   .superRefine((p, ctx) => {

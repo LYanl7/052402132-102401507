@@ -7,12 +7,13 @@ export const categories = {
   other: '其他',
 } as const;
 export const campusPlaces = [
-  { name: '图书馆 · 2楼', lat: 26.0588, lng: 119.1968 },
-  { name: '教学楼A座 · 1楼', lat: 26.0578, lng: 119.198 },
-  { name: '体育馆 · 门口', lat: 26.0567, lng: 119.1958 },
-  { name: '食堂西门', lat: 26.0569, lng: 119.197 },
-  { name: '操场 · 看台', lat: 26.0558, lng: 119.196 },
-  { name: '宿舍楼 · 门口', lat: 26.058, lng: 119.1952 },
-  { name: '图书馆 · 服务台', lat: 26.0588, lng: 119.1968 },
+  { name: '图书馆 · 2楼' },
+  { name: '教学楼A座 · 1楼' },
+  { name: '体育馆 · 门口' },
+  { name: '食堂西门' },
+  { name: '操场 · 看台' },
+  { name: '宿舍楼 · 门口' },
+  { name: '图书馆 · 服务台' },
 ] as const;
-export const campusCenter = { lat: 26.0575, lng: 119.1968 };
+// Initial map viewport only; never substitute this for the device's location.
+export const defaultMapCenter = { lat: 26.0575, lng: 119.1968 };

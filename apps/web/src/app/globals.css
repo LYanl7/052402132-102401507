@@ -746,6 +746,7 @@ svg {
   gap: 12px;
   align-items: center;
   margin-top: 8px;
+  white-space: nowrap;
 }
 .coordinate-fields input {
   background: white;
@@ -1386,16 +1387,115 @@ svg {
   margin: 0 auto 20px;
   color: var(--muted);
 }
-.campus-map {
+.baidu-map {
   position: relative;
   width: 100%;
   height: 470px;
   background: #edf0e6;
   overflow: hidden;
 }
-.campus-map > svg {
+.baidu-map-canvas {
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
+}
+.map-state {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 70px 24px;
+  text-align: center;
+  background: #edf0e6;
+  color: var(--muted);
+}
+.map-state button,
+.map-search-area {
+  border-radius: 20px;
+  background: white;
+  padding: 10px 18px;
+  color: var(--ink);
+  box-shadow: 0 2px 12px #0001;
+}
+.map-search-area {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+}
+.map-post-pin {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid white;
+  border-radius: 50% 50% 50% 4px;
+  box-shadow: 0 3px 8px #0003;
+  background: var(--lost);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+}
+.map-post-pin.found {
+  background: var(--found);
+}
+.map-position-dot,
+.map-search-dot {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: #5185dd;
+  box-shadow: 0 0 0 6px #5185dd25;
+}
+.map-search-dot {
+  width: 10px;
+  height: 10px;
+  border-width: 2px;
+  box-shadow: none;
+}
+.location-picker {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.location-search {
+  display: flex;
+  gap: 8px;
+}
+.location-search input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  background: white;
+}
+.location-search input:first-child {
+  width: 65px;
+  flex-shrink: 0;
+}
+.location-search button {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  background: var(--yellow);
+  border-radius: 8px;
+}
+.picker-map {
+  height: 280px;
+  border-radius: 12px;
+}
+.picker-map .locate-button {
+  bottom: 40px;
 }
 .map-filters {
   position: absolute;
@@ -1403,6 +1503,12 @@ svg {
   top: 16px;
   display: flex;
   gap: 8px;
+}
+.map-filters,
+.map-search-area,
+.locate-button,
+.map-caption {
+  z-index: 2;
 }
 .map-filters button {
   display: flex;
@@ -1426,30 +1532,6 @@ svg {
 .map-filters .found i {
   background: var(--found);
 }
-.map-marker {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  width: 36px;
-  height: 36px;
-  background: var(--lost);
-  border: 4px solid white;
-  color: white;
-  border-radius: 50%;
-  box-shadow: 0 3px 8px #0002;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 13px;
-  z-index: 2;
-}
-.map-marker.found {
-  background: #2f9c85;
-}
-.map-marker:hover {
-  z-index: 4;
-  scale: 1.15;
-}
 .locate-button {
   position: absolute;
   right: 16px;
@@ -1463,7 +1545,7 @@ svg {
 .map-caption {
   position: absolute;
   left: 16px;
-  bottom: 12px;
+  bottom: 38px;
   color: #768073;
   font-size: 10px;
   background: #ffffffb3;

@@ -81,6 +81,7 @@ test('ORM opens a node:sqlite v1 database without changing rows, cursors or cons
     assert.equal(findSessionUser(db, 'legacy-session', Date.now())?.id, 'alice');
     assert.deepEqual(findPost(db, 'post', 'bob')?.images, ['/uploads/legacy.png']);
     assert.equal(findPost(db, 'post', 'bob')?.favorite, true);
+    assert.equal(findPost(db, 'post')?.coordinateSystem, 'legacy');
     assert.equal('deletedAt' in findPost(db, 'post')!, false);
     assert.deepEqual(
       findChatHistory(db, 'chat', Number.MAX_SAFE_INTEGER, 1).map((m) => m.cursor),
@@ -122,7 +123,7 @@ test('ORM opens a node:sqlite v1 database without changing rows, cursors or cons
     db = new Database(path);
     assert.equal(findPost(db, 'post')?.views, 1);
     assert.equal(findConversations(db, 'alice')[0].unread, 1);
-    assert.equal(db.orm.select({ count: count() }).from(schemaMigrations).get()?.count, 2);
+    assert.equal(db.orm.select({ count: count() }).from(schemaMigrations).get()?.count, 3);
   } finally {
     db?.close();
     rmSync(dir, { recursive: true, force: true });

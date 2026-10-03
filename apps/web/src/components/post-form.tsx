@@ -8,6 +8,7 @@ import type { Post, PostInput } from '../modules/message/models.ts';
 import { api, errorMessage } from '@/lib/api';
 import { useSession } from './providers';
 import { Loading, ErrorState } from './ui';
+import { LocationPicker } from './location-picker';
 
 const initial: PostInput = {
   type: 'lost',
@@ -20,6 +21,7 @@ const initial: PostInput = {
   images: [],
   lat: null,
   lng: null,
+  coordinateSystem: 'bd09',
   status: 'active',
 };
 function localDate(value: string) {
@@ -39,6 +41,7 @@ export function PostForm() {
     [busy, setBusy] = useState(false),
     [uploading, setUploading] = useState(false),
     [tick, setTick] = useState(0);
+  const [pickerOpen, setPickerOpen] = useState(false);
   useEffect(() => {
     let cancelled = false;
     const edit = new URLSearchParams(location.search).get('edit');
@@ -222,12 +225,12 @@ export function PostForm() {
             value={form.location}
             maxLength={120}
             onChange={(e) => {
-              const place = campusPlaces.find((p) => p.name === e.target.value);
               setForm((f) => ({
                 ...f,
                 location: e.target.value,
-                lat: place?.lat ?? null,
-                lng: place?.lng ?? null,
+                lat: null,
+                lng: null,
+                coordinateSystem: 'bd09',
               }));
             }}
           />
@@ -269,11 +272,36 @@ export function PostForm() {
           />
         </label>
       </div>
-      <details className="coordinate-fields">
+      <details
+        className="coordinate-fields"
+        onToggle={(event) => setPickerOpen(event.currentTarget.open)}
+      >
         <summary>地图位置{form.lat !== null ? ' · 已设置' : '（自定义地点可选填）'}</summary>
-        <p className="muted small">
-          校园地点的坐标为示例位置。输入准确坐标后可在附近页按距离查找。
-        </p>
+        {form.coordinateSystem === 'legacy' && (
+          <p className="form-error">旧地图位置尚未确认，请重新选点，让这条信息出现在附近。</p>
+        )}
+        {pickerOpen && (
+          <LocationPicker
+            value={
+              form.coordinateSystem !== 'legacy' && form.lat !== null && form.lng !== null
+                ? { lat: form.lat, lng: form.lng }
+                : null
+            }
+            onChange={(position, address) =>
+              setForm((previous) => {
+                if (address && (previous.lat !== position.lat || previous.lng !== position.lng))
+                  return previous;
+                return {
+                  ...previous,
+                  ...position,
+                  coordinateSystem: 'bd09',
+                  location: previous.location || address || '',
+                };
+              })
+            }
+          />
+        )}
+        <p className="muted small">也可手动填写百度地图经纬度（BD-09）。</p>
         <label>
           纬度
           <input
@@ -281,8 +309,16 @@ export function PostForm() {
             step="any"
             min={-90}
             max={90}
-            value={form.lat ?? ''}
-            onChange={(e) => update('lat', e.target.value === '' ? null : Number(e.target.value))}
+            aria-label="地图纬度"
+            value={form.coordinateSystem === 'legacy' ? '' : (form.lat ?? '')}
+            onChange={(e) =>
+              setForm((previous) => ({
+                ...previous,
+                coordinateSystem: 'bd09',
+                lng: previous.coordinateSystem === 'legacy' ? null : previous.lng,
+                lat: e.target.value === '' ? null : Number(e.target.value),
+              }))
+            }
           />
         </label>
         <label>
@@ -292,10 +328,34 @@ export function PostForm() {
             step="any"
             min={-180}
             max={180}
-            value={form.lng ?? ''}
-            onChange={(e) => update('lng', e.target.value === '' ? null : Number(e.target.value))}
+            aria-label="地图经度"
+            value={form.coordinateSystem === 'legacy' ? '' : (form.lng ?? '')}
+            onChange={(e) =>
+              setForm((previous) => ({
+                ...previous,
+                coordinateSystem: 'bd09',
+                lat: previous.coordinateSystem === 'legacy' ? null : previous.lat,
+                lng: e.target.value === '' ? null : Number(e.target.value),
+              }))
+            }
           />
         </label>
+        {form.lat !== null && (
+          <button
+            type="button"
+            className="text-button"
+            onClick={() =>
+              setForm((previous) => ({
+                ...previous,
+                lat: null,
+                lng: null,
+                coordinateSystem: 'bd09',
+              }))
+            }
+          >
+            清除地图位置
+          </button>
+        )}
       </details>
       <p className="muted small">
         温馨提示：

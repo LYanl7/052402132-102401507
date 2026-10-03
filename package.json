@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "preview:screenshots": "node scripts/capture-preview.mjs"
+    "preview:screenshots": "node scripts/capture-preview.mjs",
+    "preview:maps": "node scripts/capture-map-preview.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

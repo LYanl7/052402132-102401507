@@ -465,7 +465,7 @@ test('API business flows, permissions, persistent storage and realtime delivery'
           );
           assert.equal(
             reopened.orm.select({ count: count() }).from(schemaMigrations).get()?.count,
-            2,
+            3,
           );
         } finally {
           reopened.close();

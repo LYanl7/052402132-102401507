@@ -42,6 +42,7 @@ PostInput 示例：
   "images": [],
   "lat": 26.0588,
   "lng": 119.1968,
+  "coordinateSystem": "bd09",
   "status": "active"
 }
 ```
@@ -49,6 +50,8 @@ PostInput 示例：
 `type` 为 lost/found，`category` 为 keys/electronics/umbrella/wallet/card/other。发生时间使用 ISO 8601 UTC；前端显示浏览器本地时间。`days` 根据发布时间过滤，`sort` 为 newest/oldest。分页默认每页 20 条，最多 50 条。附近半径默认为 1500 米，允许 50–50000 米。images 必须是本账号上传的路径，最多九张。
 
 草稿 status=draft 允许名称、地点、描述、发生时间为空，公开发布需补齐。经纬度同时填写或同时为 null。发布返回 Post，追加作者、favorite、浏览次数、创建和更新时间。
+
+地图选点和附近查询统一使用 BD-09 经纬度；设备 WGS84 坐标需先经百度 Convertor 转换。`coordinateSystem` 新输入默认 bd09，旧数据迁移为 legacy，保留原始坐标但不进入附近查询，作者重新选点后保存为 bd09。附近仅返回未删除、进行中、经纬度完整且为 bd09 的 Post；草稿、已完成、无位置和 legacy 信息均不会返回。distance 是到查询中心的近似直线距离，单位米，不是路线长度。
 
 ## 收藏与浏览
 

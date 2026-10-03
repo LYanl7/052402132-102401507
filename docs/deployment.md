@@ -29,9 +29,12 @@ COOKIE_SECURE=true
 DATA_DIR=/srv/mayoimon-data
 TRUSTED_PROXIES=127.0.0.1,::1
 CHAT_TTL_DAYS=7
+NEXT_PUBLIC_BAIDU_MAP_AK=你的百度地图浏览器AK
 ```
 
 `DATA_DIR` 支持绝对路径，也支持相对于 `apps/web` 的路径；默认 `../../data` 即项目根目录下的 data。Windows 可使用 `DATA_DIR=D:/mayoimono-data`。修改服务端配置后重启；私聊默认根据 HTTPS 页面自动使用同源 `wss://<域名>/ws`。若有专门的 WebSocket 域名，可设置可选 `NEXT_PUBLIC_WS_URL` 并重新构建。
+
+百度地图 AK 需为浏览器应用并开启 JavaScript API 服务，将实际访问域名加入 Referer 白名单。本地开发允许 localhost / 127.0.0.1；修改 `NEXT_PUBLIC_BAIDU_MAP_AK` 后重启开发服务，生产环境需重新构建。浏览器设备定位需要 HTTPS 或 localhost，普通 HTTP 局域网访问仍可用地图手动选点。应用被禁用、配额不足或网络失败时地图提供提示和重试，Post 列表接口独立于百度服务运行。
 
 运行 `npm run build` 与 `npm start`，用操作系统服务或进程管理器保持这个进程运行。反向代理全部请求到 3000 端口，WebSocket 保留 Upgrade。Nginx 的 HTTPS server 内加入：
 

@@ -18,6 +18,7 @@ const schema = {
 };
 import { migrationTableSql, initialSchemaSql } from './migrations/0001-initial.ts';
 import { chatDeliverySql } from './migrations/0002-chat-delivery.ts';
+import { postCoordinatesSql } from './migrations/0003-post-coordinates.ts';
 import { createLogger } from './logger.ts';
 
 const log = createLogger('database');
@@ -67,6 +68,19 @@ export class Database {
               .values({ version: 2, appliedAt: new Date().toISOString() })
               .run();
             applied.push(2);
+          }
+          if (
+            !tx
+              .select()
+              .from(schema.schemaMigrations)
+              .where(eq(schema.schemaMigrations.version, 3))
+              .get()
+          ) {
+            this.connection.exec(postCoordinatesSql);
+            tx.insert(schema.schemaMigrations)
+              .values({ version: 3, appliedAt: new Date().toISOString() })
+              .run();
+            applied.push(3);
           }
         },
         { behavior: 'immediate' },

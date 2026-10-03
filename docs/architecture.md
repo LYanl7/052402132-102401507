@@ -121,6 +121,6 @@ v2 迁移添加投递字段、四元组索引、ACK/已读/序号表，保留旧
 
 390 px 为设计宽度，桌面居中展示移动布局，小屏按宽度适配。原型中的固定数量改为数据库统计，固定日期改为实际时间，会话在线文字改为真实连接状态。页面具备加载、空数据、请求失败、校验失败、未登录和重复提交反馈。
 
-校园地图和预置地点坐标属于示意数据；用户和发布信息通过注册、发布流程创建。真实地点校正、地图服务接入、校园官方通知、找回身份核验不由现有原型自动提供。
+附近地图接入百度 JSAPI 4.0，浏览器按需加载 SDK，并调用应用的附近接口查询 Post。发布页支持地址搜索、地图选点和定位，统一保存 BD-09 坐标；设备 GPS 在浏览器通过百度 Convertor 转换后查询 / 保存。v3 迁移新增 coordinate_system，旧坐标标为 legacy 并保留，需重新选点后才参与附近查询。预置地点名称仅作填写建议，不再赋予示例坐标；默认浏览中心仍沿用原示例值，不代表设备位置。校园官方通知和物品身份核验未对接外部服务。
 
 框架行为参考 [Next.js Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers)、[Next.js 自定义服务](https://nextjs.org/docs/app/guides/custom-server) 与 [Node SQLite](https://nodejs.org/docs/latest-v22.x/api/sqlite.html)。
