@@ -8,6 +8,7 @@ import * as userSchema from '../user/schema.ts';
 import * as messageSchema from '../message/schema.ts';
 import * as interactionSchema from '../interaction/schema.ts';
 import * as chatSchema from '../private-chat/schema.ts';
+
 const schema = {
   ...infrastructureSchema,
   ...userSchema,
@@ -17,16 +18,23 @@ const schema = {
 };
 import { migrationTableSql, initialSchemaSql } from './migrations/0001-initial.ts';
 import { chatDeliverySql } from './migrations/0002-chat-delivery.ts';
+import { createLogger } from './logger.ts';
+
+const log = createLogger('database');
 
 export class Database {
   private readonly connection: BetterSqlite3.Database;
   readonly orm: BetterSQLite3Database<typeof schema>;
 
   constructor(path: string) {
-    if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
-    this.connection = new BetterSqlite3(path);
-    this.orm = drizzle(this.connection, { schema });
+    const started = performance.now();
+    const applied: number[] = [];
+    let connection: BetterSqlite3.Database | undefined;
     try {
+      if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
+      connection = new BetterSqlite3(path);
+      this.connection = connection;
+      this.orm = drizzle(this.connection, { schema });
       this.connection.pragma('foreign_keys = ON');
       this.connection.pragma('journal_mode = WAL');
       this.connection.pragma('busy_timeout = 5000');
@@ -45,6 +53,7 @@ export class Database {
             tx.insert(schema.schemaMigrations)
               .values({ version: 1, appliedAt: new Date().toISOString() })
               .run();
+            applied.push(1);
           }
           if (
             !tx
@@ -57,16 +66,21 @@ export class Database {
             tx.insert(schema.schemaMigrations)
               .values({ version: 2, appliedAt: new Date().toISOString() })
               .run();
+            applied.push(2);
           }
         },
         { behavior: 'immediate' },
       );
+      for (const version of applied) log.info('database.migrated', { version });
+      log.info('database.opened', { durationMs: Math.round(performance.now() - started) });
     } catch (error) {
-      this.connection.close();
+      connection?.close();
+      log.error('database.initialization_failed', { error });
       throw error;
     }
   }
   close() {
     this.connection.close();
+    log.info('database.closed');
   }
 }

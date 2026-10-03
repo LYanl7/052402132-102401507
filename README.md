@@ -66,6 +66,8 @@ mayoimono/
 
 ## 构建与验证
 
+服务端和测试使用统一的结构化日志，默认 `LOG_LEVEL=info`。接口响应的 `X-Request-Id` 可用于关联业务操作和请求错误。配置、事件及扩展方式见 [日志说明](docs/logging.md)。
+
 ```powershell
 npm run check
 npm test

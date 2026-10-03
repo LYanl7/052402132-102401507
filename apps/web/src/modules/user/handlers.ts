@@ -5,6 +5,9 @@ import { endpoint, json } from '../infrastructure/http.ts';
 import { findUserByEmail, insertUser, saveProfile } from './repository.ts';
 import { hashPassword, checkPassword } from './security.ts';
 import { sessionCookie, revokeSession } from './session.ts';
+import { createLogger } from '../infrastructure/logger.ts';
+
+const log = createLogger('user');
 
 export const register = endpoint(
   async (req, ctx) => {
@@ -15,7 +18,9 @@ export const register = endpoint(
     const user = { id: randomUUID(), email, name: p.name, bio: '愿每件失物都能回家' };
     insertUser(ctx.db, { ...user, passwordHash: password, createdAt: new Date().toISOString() });
     revokeSession(ctx, req.sessionHash);
-    return json({ user }, 201, { 'Set-Cookie': sessionCookie(ctx, user) });
+    const cookie = sessionCookie(ctx, user);
+    log.info('user.registered', { userId: user.id });
+    return json({ user }, 201, { 'Set-Cookie': cookie });
   },
   { rate: 10 },
 );
@@ -30,7 +35,9 @@ export const login = endpoint(
     if (!row || !ok) throw new AppError(401, '邮箱或密码错误');
     revokeSession(ctx, req.sessionHash);
     const user = { id: row.id, email: row.email, name: row.name, bio: row.bio };
-    return json({ user }, 200, { 'Set-Cookie': sessionCookie(ctx, user) });
+    const cookie = sessionCookie(ctx, user);
+    log.info('user.logged_in', { userId: user.id });
+    return json({ user }, 200, { 'Set-Cookie': cookie });
   },
   { rate: 10 },
 );
@@ -39,12 +46,14 @@ export const updateProfile = endpoint(
   (req, ctx) => {
     const p = profileSchema.parse(req.body);
     saveProfile(ctx.db, userId(req), p);
+    log.info('user.profile_updated');
     return { user: { ...req.user, ...p } };
   },
   { auth: true },
 );
 export const logout = endpoint((req, ctx) => {
   revokeSession(ctx, req.sessionHash);
+  log.info('user.logged_out');
   return json({ ok: true }, 200, {
     'Set-Cookie': `mayoimon_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${ctx.secureCookie ? '; Secure' : ''}`,
   });

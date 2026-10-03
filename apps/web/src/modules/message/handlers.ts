@@ -11,6 +11,9 @@ import {
   softDeletePost,
 } from './repository.ts';
 import { endpoint } from '../infrastructure/http.ts';
+import { createLogger } from '../infrastructure/logger.ts';
+
+const log = createLogger('message');
 export const listPosts = endpoint(async (req, ctx) => {
   const p = querySchema.parse(req.query);
   return searchPosts(ctx.db, p, req.user?.id);
@@ -52,6 +55,7 @@ export const completePost = endpoint(
     const post = ownedPost(ctx.db, req.params.id, userId(req));
     if (post.status === 'draft') throw new AppError(409, '草稿不能标记完成');
     setPostCompleted(ctx.db, post.id, new Date().toISOString());
+    log.info('post.completed', { postId: post.id });
     return { post: getPost(ctx.db, post.id, userId(req)) };
   },
   { auth: true },
@@ -60,6 +64,7 @@ export const deletePost = endpoint(
   async (req, ctx) => {
     ownedPost(ctx.db, req.params.id, userId(req));
     softDeletePost(ctx.db, req.params.id, new Date().toISOString());
+    log.info('post.deleted', { postId: req.params.id });
     return { ok: true };
   },
   { auth: true },

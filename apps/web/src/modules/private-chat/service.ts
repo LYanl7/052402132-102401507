@@ -3,6 +3,9 @@ import type { ChatSendInput } from './models.ts';
 import type { Database } from '../infrastructure/database.ts';
 import { findConversation, findConversations, acceptMessage } from './repository.ts';
 import { AppError } from '../infrastructure/context.ts';
+import { createLogger } from '../infrastructure/logger.ts';
+
+const log = createLogger('private-chat');
 export function participant(db: Database, id: string, user: string) {
   const row = findConversation(db, id);
   if (!row || (row.userA !== user && row.userB !== user)) throw new AppError(404, '会话不存在');
@@ -31,6 +34,12 @@ export function sendMessage(
     seqId: input.seqId,
     createdAt: new Date(now).toISOString(),
     expiresAt: now + ttlMs,
+  });
+  log.info(result.created ? 'chat.message_accepted' : 'chat.message_deduplicated', {
+    conversationId,
+    messageId: result.message.id,
+    userId: user,
+    seqId: input.seqId,
   });
   return { ...result, peer: c.userA === user ? c.userB : c.userA };
 }

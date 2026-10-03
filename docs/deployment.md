@@ -63,6 +63,8 @@ location = /ws {
 
 ## 备份和恢复
 
+服务端默认按行输出 JSON 日志，使用 `LOG_LEVEL` 控制级别，由进程管理器保存和轮转。按接口响应的 `X-Request-Id` 可关联请求耗时、业务事件及错误。详见 [日志说明](logging.md)。
+
 停止服务后备份整个 DATA_DIR，包含 SQLite、可能存在的 WAL/SHM 文件和 uploads。恢复时同样先停止服务，再恢复整个目录并检查文件权限。不要只复制运行中的 SQLite 主文件，否则可能漏掉 WAL 中已提交的数据。
 
 重构沿用原有 `data/mayoimon.sqlite`、表结构、会话和上传文件，无需重新建库。首次启动自动建表，账号和信息通过页面创建。迁移版本记录在 schema_migrations，未来升级通过新增版本迁移保留数据。

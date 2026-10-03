@@ -4,6 +4,9 @@ import { join } from 'node:path';
 import { userId, AppError } from './context.ts';
 import { insertUpload } from './upload-repository.ts';
 import { endpoint } from './http.ts';
+import { createLogger } from './logger.ts';
+
+const log = createLogger('uploads');
 
 export const upload = endpoint(
   async (req, ctx) => {
@@ -34,6 +37,7 @@ export const upload = endpoint(
       await unlink(destination);
       throw error;
     }
+    log.info('upload.created', { uploadId: filename, bytes: file.size, format: extension });
     return { path };
   },
   { auth: true, status: 201, body: 'form' },

@@ -4,6 +4,9 @@ import type { Database } from '../infrastructure/database.ts';
 import { AppError } from '../infrastructure/context.ts';
 import { ownsUpload } from '../infrastructure/upload-repository.ts';
 import { findPost, insertPost, updatePostData } from './repository.ts';
+import { createLogger } from '../infrastructure/logger.ts';
+
+const log = createLogger('message');
 
 export function getPost(db: Database, id: string, viewer?: string): Post {
   const post = findPost(db, id, viewer);
@@ -28,7 +31,9 @@ export function savePost(db: Database, input: PostInput, owner: string, id?: str
   } else {
     insertPost(db, { ...input, id: postId, userId: owner, createdAt: now, updatedAt: now });
   }
-  return getPost(db, postId, owner);
+  const post = getPost(db, postId, owner);
+  log.info(id ? 'post.updated' : 'post.created', { postId, userId: owner, status: post.status });
+  return post;
 }
 export function distanceMeters(aLat: number, aLng: number, bLat: number, bLng: number) {
   const rad = Math.PI / 180;

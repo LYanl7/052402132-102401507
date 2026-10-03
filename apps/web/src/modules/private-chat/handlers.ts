@@ -22,6 +22,9 @@ import {
 } from './repository.ts';
 import { endpoint, json } from '../infrastructure/http.ts';
 import type { RequestContext } from '../infrastructure/models.ts';
+import { createLogger } from '../infrastructure/logger.ts';
+
+const log = createLogger('private-chat');
 function userId(req: RequestContext) {
   const id = authenticatedUser(req);
   const expected = req.request.headers.get('x-chat-user-id');
@@ -49,6 +52,7 @@ export const createConversation = endpoint(
       updatedAt: new Date().toISOString(),
     });
 
+    log.info('chat.conversation_opened', { conversationId: row.id, postId: post.id });
     return { conversation: listConversations(ctx.db, userId(req)).find((c) => c.id === row.id) };
   },
   { auth: true, status: 201 },
@@ -105,6 +109,7 @@ export const acknowledgeDelivery = endpoint(
   (req, ctx) => {
     const input = ackSchema.parse(req.body);
     acknowledge(ctx.db, userId(req), input.deviceId, input.ids);
+    log.debug('chat.acknowledged', { count: input.ids.length });
     return { ok: true };
   },
   { auth: true },
