@@ -110,7 +110,7 @@ test('Publishing a map position persists it and shows the post on Nearby', async
   await expect
     .poll(async () => Number(await page.getByRole('spinbutton', { name: '地图纬度' }).inputValue()))
     .toBeCloseTo(26.0585, 6);
-  await expect(page.getByRole('combobox', { name: '地点', exact: true })).toHaveValue(
+  await expect(page.getByRole('textbox', { name: '地点', exact: true })).toHaveValue(
     '测试城市测试学校图书馆',
   );
   await page.getByRole('textbox', { name: '地点所在城市' }).fill('测试城市');

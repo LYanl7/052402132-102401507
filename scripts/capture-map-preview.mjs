@@ -1,18 +1,19 @@
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const port = Number(process.env.MAP_PREVIEW_PORT ?? 3002);
 const baseURL = `http://127.0.0.1:${port}`;
 const directory = resolve(root, 'docs/screenshots');
-const dataDir = resolve(root, 'data/map-ui-preview', randomUUID());
+const previewRoot = resolve(root, 'data/map-ui-preview');
+const dataDir = resolve(previewRoot, randomUUID());
 mkdirSync(directory, { recursive: true });
 mkdirSync(dataDir, { recursive: true });
-// Run a dedicated production service so preview accounts/posts never reach user data.
+// Use an empty database; the temporary login is discarded after capture.
 const service = spawn(process.execPath, [resolve(root, 'apps/web/dist-server/server.js')], {
   cwd: resolve(root, 'apps/web'),
   windowsHide: true,
@@ -42,6 +43,7 @@ const report = {
   capturedAt: new Date().toISOString(),
   realBaiduSDK: true,
   isolatedPreviewData: true,
+  demoPostsCreated: false,
   dialogs: [],
   browserErrors: [],
   screenshots: [],
@@ -81,43 +83,6 @@ try {
     },
   });
   if (registration.status() !== 201) throw new Error('预览账号创建失败');
-  const basePost = {
-    description: '界面检查用演示发布，数据仅保存在独立预览数据库中。',
-    occurredAt: new Date(Date.now() - 3600000).toISOString(),
-    status: 'active',
-    coordinateSystem: 'bd09',
-  };
-  for (const post of [
-    {
-      title: '蓝色挂件钥匙',
-      type: 'lost',
-      category: 'keys',
-      location: '图书馆门口',
-      lat: 26.0578,
-      lng: 119.1968,
-    },
-    {
-      title: '拾到一把折叠雨伞',
-      type: 'found',
-      category: 'umbrella',
-      location: '教学楼入口',
-      lat: 26.0586,
-      lng: 119.1974,
-    },
-    {
-      title: '黑色耳机充电盒',
-      type: 'lost',
-      category: 'electronics',
-      location: '操场附近',
-      lat: 26.0564,
-      lng: 119.1956,
-    },
-  ]) {
-    const response = await context.request.post(baseURL + '/api/posts', {
-      data: { ...basePost, ...post },
-    });
-    if (response.status() !== 201) throw new Error('预览发布创建失败');
-  }
   async function waitForMap() {
     await page.waitForFunction(
       () =>
@@ -137,6 +102,16 @@ try {
       scrollWidth: document.documentElement.scrollWidth,
     }));
     if (layout.scrollWidth > layout.width) throw new Error(`${name} 存在横向溢出`);
+    const emptyMessageVisible = await page.evaluate(() => {
+      const message = document.querySelector('.nearby-panel .empty p');
+      const navigation = document.querySelector('.bottom-nav');
+      return (
+        !message ||
+        !navigation ||
+        message.getBoundingClientRect().bottom <= navigation.getBoundingClientRect().top
+      );
+    });
+    if (!emptyMessageVisible) throw new Error(`${name} 的空结果提示被底部导航遮挡`);
     const states = await page.locator('.map-state').allTextContents();
     report.screenshots.push({
       file: name + '.png',
@@ -149,41 +124,30 @@ try {
   }
   await page.goto(baseURL + '/nearby');
   await waitForMap();
-  await page.locator('.nearby-panel .post-row').first().waitFor();
+  await page.getByText('当前范围暂无信息，试试扩大范围或移动地图').waitFor();
   await capture('nearby');
-  if (!(await page.locator('.map-state').count())) {
-    await page.locator('.map-post-pin').first().click();
-    await page.waitForURL('**/posts/*');
-    await page.getByRole('heading', { name: '物品信息' }).waitFor();
-    report.liveChecks.markerOpensDetail = true;
-    await page.goto(baseURL + '/nearby');
-    await waitForMap();
-  }
+  if (await page.locator('.map-post-pin').count()) throw new Error('空数据库出现地图标记');
+  report.liveChecks.emptyNearby = true;
   await page.getByRole('button', { name: '寻物', exact: true }).click();
-  await page.locator('.nearby-panel .post-row').filter({ hasText: '蓝色挂件钥匙' }).waitFor();
-  await page
-    .locator('.nearby-panel .post-row')
-    .filter({ hasText: '折叠雨伞' })
-    .waitFor({ state: 'hidden' });
+  await page.getByText('当前范围暂无信息，试试扩大范围或移动地图').waitFor();
   await capture('nearby-lost');
   await page.getByRole('button', { name: '招领', exact: true }).click();
-  await page.locator('.nearby-panel .post-row').filter({ hasText: '折叠雨伞' }).waitFor();
-  await page
-    .locator('.nearby-panel .post-row')
-    .filter({ hasText: '蓝色挂件钥匙' })
-    .waitFor({ state: 'hidden' });
+  await page.getByText('当前范围暂无信息，试试扩大范围或移动地图').waitFor();
   await capture('nearby-found');
   await page.getByRole('button', { name: '招领', exact: true }).click();
-  await page.locator('.nearby-panel .post-row').filter({ hasText: '蓝色挂件钥匙' }).waitFor();
+  await page.getByText('当前范围暂无信息，试试扩大范围或移动地图').waitFor();
   await page.setViewportSize({ width: 320, height: 740 });
   await capture('nearby-320');
   await page.setViewportSize({ width: 1440, height: 1000 });
   await capture('nearby-desktop');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(baseURL + '/publish');
-  await page.getByRole('textbox', { name: '物品名称', exact: true }).fill('蓝色挂件钥匙');
-  await page.getByRole('combobox', { name: '物品类别' }).selectOption('keys');
-  await page.getByRole('combobox', { name: '地点', exact: true }).fill('图书馆门口');
+  await page.getByRole('textbox', { name: '物品名称', exact: true }).waitFor();
+  for (const label of ['物品名称', '地点']) {
+    if (await page.getByRole('textbox', { name: label, exact: true }).inputValue())
+      throw new Error('发布表单不应预填物品信息');
+  }
+  report.liveChecks.emptyPublishForm = true;
   await page.locator('summary').filter({ hasText: '地图位置' }).click();
   await waitForMap();
   await capture('publish-location', true);
@@ -222,6 +186,17 @@ try {
       output: { lat: Number(parameters.get('lat')), lng: Number(parameters.get('lng')) },
     };
   }
+  for (const [path, name] of [
+    ['/', 'home'],
+    ['/publish', 'publish'],
+    ['/search', 'search'],
+    ['/messages', 'messages'],
+    ['/my-posts', 'my-posts'],
+  ]) {
+    await page.goto(baseURL + path);
+    await page.locator('.empty').filter({ hasText: '正在加载' }).waitFor({ state: 'hidden' });
+    await capture(name, path === '/publish');
+  }
   writeFileSync(
     resolve(directory, 'map-preview-report.json'),
     JSON.stringify(report, null, 2) + '\n',
@@ -245,4 +220,8 @@ try {
   await browser?.close();
   service.kill('SIGTERM');
   await stopped;
+  const withinPreview = relative(previewRoot, dataDir);
+  if (!withinPreview || withinPreview.startsWith('..') || isAbsolute(withinPreview))
+    throw new Error('预览数据清理路径超出范围');
+  rmSync(dataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }

@@ -1,7 +1,8 @@
 {
-  "capturedAt": "2026-10-03T13:16:49.139Z",
+  "capturedAt": "2026-10-03T13:44:26.433Z",
   "realBaiduSDK": true,
   "isolatedPreviewData": true,
+  "demoPostsCreated": false,
   "dialogs": [],
   "browserErrors": [],
   "screenshots": [
@@ -12,7 +13,7 @@
         "height": 844
       },
       "mapState": [],
-      "visibleMarkers": 3,
+      "visibleMarkers": 0,
       "layout": {
         "width": 390,
         "scrollWidth": 390
@@ -25,7 +26,7 @@
         "height": 844
       },
       "mapState": [],
-      "visibleMarkers": 2,
+      "visibleMarkers": 0,
       "layout": {
         "width": 390,
         "scrollWidth": 390
@@ -38,7 +39,7 @@
         "height": 844
       },
       "mapState": [],
-      "visibleMarkers": 1,
+      "visibleMarkers": 0,
       "layout": {
         "width": 390,
         "scrollWidth": 390
@@ -51,7 +52,7 @@
         "height": 740
       },
       "mapState": [],
-      "visibleMarkers": 3,
+      "visibleMarkers": 0,
       "layout": {
         "width": 320,
         "scrollWidth": 320
@@ -64,7 +65,7 @@
         "height": 1000
       },
       "mapState": [],
-      "visibleMarkers": 3,
+      "visibleMarkers": 0,
       "layout": {
         "width": 1440,
         "scrollWidth": 1440
@@ -95,10 +96,76 @@
         "width": 320,
         "scrollWidth": 320
       }
+    },
+    {
+      "file": "home.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "mapState": [],
+      "visibleMarkers": 0,
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390
+      }
+    },
+    {
+      "file": "publish.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "mapState": [],
+      "visibleMarkers": 0,
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390
+      }
+    },
+    {
+      "file": "search.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "mapState": [],
+      "visibleMarkers": 0,
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390
+      }
+    },
+    {
+      "file": "messages.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "mapState": [],
+      "visibleMarkers": 0,
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390
+      }
+    },
+    {
+      "file": "my-posts.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "mapState": [],
+      "visibleMarkers": 0,
+      "layout": {
+        "width": 390,
+        "scrollWidth": 390
+      }
     }
   ],
   "liveChecks": {
-    "markerOpensDetail": true,
+    "emptyNearby": true,
+    "emptyPublishForm": true,
     "mapPick": {
       "lat": 26.058830734265378,
       "lng": 119.19590169449029

@@ -1390,7 +1390,7 @@ svg {
 .baidu-map {
   position: relative;
   width: 100%;
-  height: 470px;
+  height: min(470px, 50svh);
   background: #edf0e6;
   overflow: hidden;
 }
@@ -1575,6 +1575,10 @@ svg {
 .nearby-panel > p {
   padding: 0 20px 12px;
   font-size: 10px;
+}
+.nearby-panel .empty {
+  padding: 24px 20px;
+  min-height: 140px;
 }
 .nearby-panel .post-row {
   padding: 12px 20px;

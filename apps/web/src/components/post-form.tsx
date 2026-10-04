@@ -2,7 +2,7 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, X } from 'lucide-react';
-import { categories, campusPlaces } from '../modules/message/constants.ts';
+import { categories } from '../modules/message/constants.ts';
 import { postInputSchema } from '../modules/message/schemas.ts';
 import type { Post, PostInput } from '../modules/message/models.ts';
 import { api, errorMessage } from '@/lib/api';
@@ -196,7 +196,7 @@ export function PostForm() {
           <span>物品名称</span>
           <input
             aria-label="物品名称"
-            placeholder="如：银色钥匙串"
+            placeholder="请输入物品名称"
             value={form.title}
             maxLength={60}
             onChange={(e) => update('title', e.target.value)}
@@ -220,8 +220,7 @@ export function PostForm() {
           <span>{form.type === 'lost' ? '丢失' : '拾取'}地点</span>
           <input
             aria-label="地点"
-            list="campus-places"
-            placeholder="选择地点或手动填写"
+            placeholder="请输入实际地点或在地图上选点"
             value={form.location}
             maxLength={120}
             onChange={(e) => {
@@ -234,11 +233,6 @@ export function PostForm() {
               }));
             }}
           />
-          <datalist id="campus-places">
-            {campusPlaces.map((p) => (
-              <option key={p.name} value={p.name} />
-            ))}
-          </datalist>
         </label>
         <label>
           <span>{form.type === 'lost' ? '丢失' : '拾取'}时间</span>

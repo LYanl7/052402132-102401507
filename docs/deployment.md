@@ -72,7 +72,7 @@ location = /ws {
 
 重构沿用原有 `data/mayoimon.sqlite`、表结构、会话和上传文件，无需重新建库。首次启动自动建表，账号和信息通过页面创建。迁移版本记录在 schema_migrations，未来升级通过新增版本迁移保留数据。
 
-`data`、`.env.local`、node_modules 和构建缓存被 Git 忽略，部署时使用 `npm ci` 从锁文件安装。生产环境从空数据库注册真实用户，公开演示账号仅用于本地演示。
+`data`、`.env.local`、node_modules 和构建缓存被 Git 忽略，部署时使用 `npm ci` 从锁文件安装。首次运行使用空数据库，账号与 Post 由用户通过页面创建，不预置演示账号或发布。
 
 ## 聊天记录保留策略
 
