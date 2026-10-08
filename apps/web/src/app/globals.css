@@ -275,6 +275,24 @@ svg {
   height: 35px;
   stroke-width: 2;
 }
+.bottom-nav .nav-badge {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(4px);
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  box-sizing: content-box;
+  background: var(--lost);
+  color: #fff;
+  border: 2px solid white;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
 .home-header {
   padding: 36px 20px 12px;
   background: white;
