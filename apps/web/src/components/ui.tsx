@@ -19,6 +19,7 @@ import {
 import type { Post } from '../modules/message/models.ts';
 import { dateLabel } from '@/lib/api';
 import { useSession } from './providers';
+import { isActiveTab } from './nav-active.ts';
 
 export function Frame({ children, nav = true }: { children: ReactNode; nav?: boolean }) {
   return (
@@ -66,10 +67,7 @@ export function BottomNav() {
   return (
     <nav className="bottom-nav" aria-label="主导航">
       {entries.map(({ href, label, icon: Icon }) => {
-        const active =
-          href === '/'
-            ? path === '/'
-            : path.startsWith(href) || (href === '/me' && path === '/my-posts');
+        const active = isActiveTab(path, href);
         return (
           <Link
             key={href}
