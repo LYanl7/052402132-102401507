@@ -1,4 +1,4 @@
-# Mayoimon · 校园失物招领
+# Mayoimono · 校园失物招领
 
 根据 [Penpot 产品原型](https://design.penpot.app/#/view?file-id=24d9d841-759d-81bc-8008-b3847703e8ed&page-id=24d9d841-759d-81bc-8008-b3847703e8ee&section=interactions&index=0&share-id=763608af-2154-449d-a9b8-8dc781e8335a) 实现的移动端 Web 应用。采用 **Next.js 全栈应用 + TypeScript + Drizzle ORM + SQLite 本地数据库**，面向单机部署。
 
@@ -14,7 +14,7 @@ npm install
 npm run dev
 ```
 
-访问 **http://localhost:3000**。页面、API、图片和 WebSocket 共用 3000 端口。无需云数据库、Redis或对象存储；真实地图需要配置百度地图浏览器 AK。
+访问 **[http://localhost:3000](http://localhost:3000)**。页面、API、图片和 WebSocket 共用 3000 端口。无需云数据库、Redis 或对象存储；真实地图需要配置百度地图浏览器端 AK。
 
 首次启动自动创建空数据库，可自行注册账号和发布信息。核对实时私聊时，用两个浏览器会话分别注册并登录两个账号。已有数据库会继续使用。
 
@@ -38,8 +38,6 @@ npm run dev
 
 在 `apps/web/.env.local` 配置 `NEXT_PUBLIC_BAIDU_MAP_AK=你的浏览器AK`，在百度控制台开启 JavaScript API 并设置访问域名白名单；修改后重启开发服务，生产环境需重新构建。设备定位需要 HTTPS 或 localhost 安全环境。接入依据：[百度 JSAPI 加载文档](https://lbs.baidu.com/docs/jsapi?title=jsapi4/guide/concepts/load)、[坐标体系和转换](https://lbs.baidu.com/docs/jsapi?title=jsapi4/guide/concept/coord)。
 
-原型中的“校园通知”未接入校方服务，不生成虚假的校方通知。物品归属核验和线下交接由双方完成。
-
 ## 项目结构
 
 ```text
@@ -52,7 +50,7 @@ mayoimono/
     src/components/         表单、导航、会话和通用 UI
     src/lib/                浏览器 HTTP 客户端
     src/server/runtime.ts   进程内共享数据库和实时推送上下文
-    src/modules/            按业务模块组织，模型与逻辑在同一目录内分文件
+    src/modules/            按业务模块组织
       user/                 用户模型、表定义、校验、注册登录和会话
       interaction/          收藏与历史模型、表定义和仓储
       private-chat/         私聊模型、表定义、服务、本地存储和同步
