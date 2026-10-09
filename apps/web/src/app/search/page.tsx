@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { categories } from '../../modules/message/constants.ts';
+import { buildSearchQuery } from '../../modules/message/search-query.ts';
 import type { PostList } from '../../modules/message/models.ts';
 import { Frame, Header, PostRow, Loading, Empty, ErrorState } from '@/components/ui';
 import { useResource } from '@/components/providers';
@@ -13,11 +14,9 @@ export default function SearchPage() {
     [days, setDays] = useState(''),
     [sort, setSort] = useState('newest'),
     [page, setPage] = useState(1);
-  const query = new URLSearchParams({ q, sort, page: String(page) });
-  if (type) query.set('type', type);
-  if (category) query.set('category', category);
-  if (days) query.set('days', days);
-  const result = useResource<PostList>('/posts?' + query.toString());
+   const result = useResource<PostList>(
+    '/posts?' + buildSearchQuery({ q, type, category, days, sort, page }),
+  );
   return (
     <Frame nav={false}>
       <Header title="搜索" back />

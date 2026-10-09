@@ -19,6 +19,8 @@ import {
 import type { Post } from '../modules/message/models.ts';
 import { dateLabel } from '@/lib/api';
 import { useSession } from './providers';
+import { useLocalConversations } from './chat-hooks';
+import { isActiveTab } from './nav-active.ts';
 
 export function Frame({ children, nav = true }: { children: ReactNode; nav?: boolean }) {
   return (
@@ -56,6 +58,9 @@ export function Header({
 }
 export function BottomNav() {
   const path = usePathname();
+  const { user } = useSession();
+  const conversations = useLocalConversations(user?.id);
+  const unread = (conversations.data ?? []).reduce((total, item) => total + item.unread, 0);
   const entries = [
     { href: '/', label: '首页', icon: Home },
     { href: '/nearby', label: '附近', icon: Compass },
@@ -66,10 +71,8 @@ export function BottomNav() {
   return (
     <nav className="bottom-nav" aria-label="主导航">
       {entries.map(({ href, label, icon: Icon }) => {
-        const active =
-          href === '/'
-            ? path === '/'
-            : path.startsWith(href) || (href === '/me' && path === '/my-posts');
+        const active = isActiveTab(path, href);
+        const badge = href === '/messages' ? unread : 0;
         return (
           <Link
             key={href}
@@ -79,6 +82,11 @@ export function BottomNav() {
           >
             <Icon size={25} strokeWidth={2} />
             <span>{label}</span>
+            {badge > 0 && (
+              <span className="nav-badge" aria-label={`${badge} 条未读`}>
+                {badge > 99 ? '99+' : badge}
+              </span>
+            )}
           </Link>
         );
       })}
